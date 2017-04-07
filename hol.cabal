@@ -18,3 +18,5 @@ Library
   ghc-options: -Wall
   exposed-modules:
     HOL.Data
+    HOL.Name
+    HOL.Type

@@ -11,40 +11,62 @@ portability: portable
 module HOL.Data
 where
 
-type Name = String
+import HOL.Name
 
-data Type = Type TypeData Integer
+type Size = Integer
+
+data Type =
+    Type TypeData Size
+  deriving (Eq,Ord,Show)
 
 data TypeData =
     VarType TypeVar
   | OpType TypeOp [Type]
+  deriving (Eq,Ord,Show)
 
-data TypeVar = TypeVar Name
+data TypeVar =
+    TypeVar Name
+  deriving (Eq,Ord,Show)
 
-data TypeOp = TypeOp Name TypeOpProv
+data TypeOp =
+    TypeOp Name TypeOpProv
+  deriving (Eq,Ord,Show)
 
 data TypeOpProv =
     UndefTypeOpProv
   | DefTypeOpProv TypeOpDef
+  deriving (Eq,Ord,Show)
 
-data TypeOpDef = TypeOpDef Term [TypeVar]
+data TypeOpDef =
+    TypeOpDef Term [TypeVar]
+  deriving (Eq,Ord,Show)
 
-data Var = Var Name Type
+data Var =
+    Var Name Type
+  deriving (Eq,Ord,Show)
 
-data Term = Term TermData Type Integer
+data Term =
+    Term TermData Type Size
+  deriving (Eq,Ord,Show)
 
 data TermData =
     ConstTerm Const Type
   | VarTerm Var
   | AppTerm Term Term
   | AbsTerm Var Term
+  deriving (Eq,Ord,Show)
 
-data Const = Const Name ConstProv
+data Const =
+    Const Name ConstProv
+  deriving (Eq,Ord,Show)
 
 data ConstProv =
     UndefConstProv
   | DefConstProv ConstDef
   | AbsConstProv TypeOp
   | RepConstProv TypeOp
+  deriving (Eq,Ord,Show)
 
-data ConstDef = ConstDef Term
+data ConstDef =
+    ConstDef Term
+  deriving (Eq,Ord,Show)
