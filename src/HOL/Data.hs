@@ -16,7 +16,7 @@ import HOL.Name
 type Size = Integer
 
 data Type =
-    Type TypeData Size
+    Type Size TypeData
   deriving (Eq,Ord,Show)
 
 data TypeData =
@@ -46,7 +46,7 @@ data Var =
   deriving (Eq,Ord,Show)
 
 data Term =
-    Term TermData Type Size
+    Term Size TermData Type
   deriving (Eq,Ord,Show)
 
 data TermData =

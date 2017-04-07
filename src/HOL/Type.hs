@@ -19,7 +19,7 @@ import HOL.Data
 -------------------------------------------------------------------------------
 
 size :: Type -> Size
-size (Type _ s) = s
+size (Type s _) = s
 
 sizeList :: [Type] -> Size
 sizeList =
