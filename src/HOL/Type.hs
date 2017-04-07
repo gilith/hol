@@ -15,7 +15,7 @@ import HOL.Name
 import HOL.Data
 
 -------------------------------------------------------------------------------
--- The size of a type as the number of constructors.
+-- The size of a type is the number of TypeData constructors.
 -------------------------------------------------------------------------------
 
 size :: Type -> Size
@@ -30,3 +30,13 @@ sizeList =
 sizeData :: TypeData -> Size
 sizeData (VarType _) = 1
 sizeData (OpType _ tys) = sizeList tys + 1
+
+-------------------------------------------------------------------------------
+-- Constructors and destructors.
+-------------------------------------------------------------------------------
+
+dest :: Type -> TypeData
+dest (Type _ d) = d
+
+mk :: TypeData -> Type
+mk d = Type (sizeData d) d
