@@ -22,6 +22,7 @@ Library
     HOL.Const
     HOL.Data
     HOL.Name
+    HOL.Sequent
     HOL.Size
     HOL.Term
     HOL.Type

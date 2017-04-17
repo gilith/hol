@@ -15,6 +15,7 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import HOL.Data
 import qualified HOL.Term as Term
+import qualified HOL.Type as Type
 
 -------------------------------------------------------------------------------
 -- Terms modulo alpha-equivalence
@@ -40,7 +41,17 @@ dest :: AlphaTerm -> Term
 dest (AlphaTerm tm) = tm
 
 -------------------------------------------------------------------------------
--- Axioms
+-- Types
+-------------------------------------------------------------------------------
+
+typeOf :: AlphaTerm -> Type
+typeOf = Term.typeOf . dest
+
+isBool :: AlphaTerm -> Bool
+isBool = Type.isBool . typeOf
+
+-------------------------------------------------------------------------------
+-- Standard axioms
 -------------------------------------------------------------------------------
 
 axiomOfExtensionality :: AlphaTerm
@@ -52,11 +63,15 @@ axiomOfChoice = mk Term.axiomOfChoice
 axiomOfInfinity :: AlphaTerm
 axiomOfInfinity = mk Term.axiomOfInfinity
 
-axioms :: Set AlphaTerm
-axioms = Set.fromList [axiomOfExtensionality,axiomOfChoice,axiomOfInfinity]
+standardAxioms :: Set AlphaTerm
+standardAxioms =
+    Set.fromList
+      [axiomOfExtensionality,
+       axiomOfChoice,
+       axiomOfInfinity]
 
-axiomToString :: AlphaTerm -> String
-axiomToString tm =
+standardAxiomName :: AlphaTerm -> String
+standardAxiomName tm =
      if tm == axiomOfExtensionality then "AXIOM OF EXTENSIONALITY"
      else if tm == axiomOfChoice then "AXIOM OF CHOICE"
      else if tm == axiomOfInfinity then "AXIOM OF INFINITY"
