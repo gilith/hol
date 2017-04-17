@@ -14,41 +14,24 @@ where
 import Data.Maybe (isJust)
 import Data.Set (Set)
 import qualified Data.Set as Set
-import HOL.Name
 import HOL.Data
+import HOL.Size
 import qualified HOL.TypeOp as TypeOp
-
--------------------------------------------------------------------------------
--- The size of a type is the number of TypeData constructors
--------------------------------------------------------------------------------
-
-size :: Type -> Size
-size (Type s _) = s
-
-sizeList :: [Type] -> Size
-sizeList =
-    foldr addSize 0
-  where
-    addSize ty n = size ty + n
-
-sizeData :: TypeData -> Size
-sizeData (VarType _) = 1
-sizeData (OpType _ tys) = sizeList tys + 1
 
 -------------------------------------------------------------------------------
 -- Constructors and destructors
 -------------------------------------------------------------------------------
 
 dest :: Type -> TypeData
-dest (Type _ d) = d
+dest (Type d _) = d
 
 mk :: TypeData -> Type
-mk d = Type (sizeData d) d
+mk d = Type d (size d)
 
 -- Variables
 
 mkVar :: TypeVar -> Type
-mkVar v = mk (VarType v)
+mkVar v = mk $ VarType v
 
 destVar :: Type -> Maybe TypeVar
 destVar ty =
@@ -68,7 +51,7 @@ equalVar v ty =
 -- Operators
 
 mkOp :: TypeOp -> [Type] -> Type
-mkOp t tys = mk (OpType t tys)
+mkOp t tys = mk $ OpType t tys
 
 destOp :: Type -> Maybe (TypeOp,[Type])
 destOp ty =
@@ -79,78 +62,38 @@ destOp ty =
 isOp :: Type -> Bool
 isOp = isJust . destOp
 
-destTypeOp :: TypeOp -> Type -> Maybe [Type]
-destTypeOp t ty =
+destGivenOp :: TypeOp -> Type -> Maybe [Type]
+destGivenOp t ty =
     case destOp ty of
       Just (u,tys) -> if u == t then Just tys else Nothing
       Nothing -> Nothing
 
-isTypeOp :: TypeOp -> Type -> Bool
-isTypeOp t = isJust . destTypeOp t
+isGivenOp :: TypeOp -> Type -> Bool
+isGivenOp t = isJust . destGivenOp t
 
-isTypeOpArity :: TypeOp -> Arity -> Type -> Bool
-isTypeOpArity t a ty =
-    case destTypeOp t ty of
-      Just tys -> length tys == a
+isNullaryOp :: TypeOp -> Type -> Bool
+isNullaryOp t ty =
+    case destGivenOp t ty of
+      Just tys -> null tys
       Nothing -> False
 
-isNullaryTypeOp :: TypeOp -> Type -> Bool
-isNullaryTypeOp t = isTypeOpArity t 0
-
-destUnaryTypeOp :: TypeOp -> Type -> Maybe Type
-destUnaryTypeOp t ty =
-    case destTypeOp t ty of
+destUnaryOp :: TypeOp -> Type -> Maybe Type
+destUnaryOp t ty =
+    case destGivenOp t ty of
       Just [ty0] -> Just ty0
       _ -> Nothing
 
-isUnaryTypeOp :: TypeOp -> Type -> Bool
-isUnaryTypeOp t = isJust . destUnaryTypeOp t
+isUnaryOp :: TypeOp -> Type -> Bool
+isUnaryOp t = isJust . destUnaryOp t
 
-destBinaryTypeOp :: TypeOp -> Type -> Maybe (Type,Type)
-destBinaryTypeOp t ty =
-    case destTypeOp t ty of
+destBinaryOp :: TypeOp -> Type -> Maybe (Type,Type)
+destBinaryOp t ty =
+    case destGivenOp t ty of
       Just [ty0,ty1] -> Just (ty0,ty1)
       _ -> Nothing
 
-isBinaryTypeOp :: TypeOp -> Type -> Bool
-isBinaryTypeOp t = isJust . destBinaryTypeOp t
-
--------------------------------------------------------------------------------
--- Type variables
--------------------------------------------------------------------------------
-
-data Vars = Vars (Set Type) (Set TypeVar)
-
-emptyVars :: Vars
-emptyVars = Vars Set.empty Set.empty
-
-setVars :: Vars -> Set TypeVar
-setVars (Vars _ vs) = vs
-
-class HasVars a where
-  addVars :: a -> Vars -> Vars
-
-  vars :: a -> Set TypeVar
-  vars a = setVars (addVars a emptyVars)
-
-instance HasVars TypeVar where
-  addVars v (Vars seen vs) = Vars seen (Set.insert v vs)
-
-instance HasVars a => HasVars [a] where
-  addVars xs vs = foldr addVars vs xs
-
-instance HasVars a => HasVars (Set a) where
-  addVars xs vs = Set.foldr addVars vs xs
-
-instance HasVars Type where
-  addVars ty vs =
-      if isSeen then vs
-      else case dest ty of
-             VarType v -> markSeen (addVars v vs)
-             OpType _ tys -> markSeen (addVars tys vs)
-    where
-      isSeen = Set.member ty seen where Vars seen _ = vs
-      markSeen (Vars s z) = Vars (Set.insert ty s) z
+isBinaryOp :: TypeOp -> Type -> Bool
+isBinaryOp t = isJust . destBinaryOp t
 
 -------------------------------------------------------------------------------
 -- Primitive types
@@ -162,7 +105,7 @@ bool :: Type
 bool = mkOp TypeOp.bool []
 
 isBool :: Type -> Bool
-isBool = isNullaryTypeOp TypeOp.bool
+isBool = isNullaryOp TypeOp.bool
 
 mkPred :: Type -> Type
 mkPred a = mkFun a bool
@@ -193,7 +136,7 @@ mkFun :: Type -> Type -> Type
 mkFun d r = mkOp TypeOp.fun [d,r]
 
 destFun :: Type -> Maybe (Type,Type)
-destFun = destBinaryTypeOp TypeOp.fun
+destFun = destBinaryOp TypeOp.fun
 
 isFun :: Type -> Bool
 isFun = isJust . destFun
@@ -219,7 +162,7 @@ ind :: Type
 ind = mkOp TypeOp.ind []
 
 isInd :: Type -> Bool
-isInd = isNullaryTypeOp TypeOp.ind
+isInd = isNullaryOp TypeOp.ind
 
 -------------------------------------------------------------------------------
 -- Types of primitive constants

@@ -18,8 +18,13 @@ Library
   hs-source-dirs: src
   ghc-options: -Wall
   exposed-modules:
+    HOL.AlphaTerm
+    HOL.Const
     HOL.Data
     HOL.Name
+    HOL.Size
+    HOL.Term
     HOL.Type
     HOL.TypeOp
     HOL.TypeVar
+    HOL.Var
