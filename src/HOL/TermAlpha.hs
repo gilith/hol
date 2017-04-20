@@ -44,7 +44,7 @@ dest :: TermAlpha -> Term
 dest (TermAlpha tm) = tm
 
 -------------------------------------------------------------------------------
--- Types
+-- Type
 -------------------------------------------------------------------------------
 
 typeOf :: TermAlpha -> Type
@@ -52,6 +52,13 @@ typeOf = Term.typeOf . dest
 
 isBool :: TermAlpha -> Bool
 isBool = Type.isBool . typeOf
+
+-------------------------------------------------------------------------------
+-- Type variables
+-------------------------------------------------------------------------------
+
+instance TypeVar.HasVars TermAlpha where
+  vars (TermAlpha tm) = TypeVar.vars tm
 
 -------------------------------------------------------------------------------
 -- Standard axioms

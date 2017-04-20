@@ -25,17 +25,20 @@ module HOL.Thm (
   mkAbs,
   mkApp,
   refl,
-  subst,
-  standardAxioms)
+  standardAxioms,
+  subst)
 where
 
 import Data.Set (Set)
 import qualified Data.Set as Set
-import HOL.TermAlpha (TermAlpha)
 import HOL.Data
 import HOL.Name
 import HOL.Sequent (Sequent)
 import qualified HOL.Sequent as Sequent
+import qualified HOL.Term as Term
+import HOL.TermAlpha (TermAlpha)
+import qualified HOL.TermAlpha as TermAlpha
+import qualified HOL.TypeVar as TypeVar
 
 -------------------------------------------------------------------------------
 -- Theorems
@@ -56,6 +59,13 @@ hyp = Sequent.hyp . dest
 
 concl :: Thm -> TermAlpha
 concl = Sequent.concl . dest
+
+-------------------------------------------------------------------------------
+-- Type variables
+-------------------------------------------------------------------------------
+
+instance TypeVar.HasVars Thm where
+  vars (Thm sq) = TypeVar.vars sq
 
 -------------------------------------------------------------------------------
 -- Standard axioms
@@ -100,28 +110,6 @@ axiomOfInfinity = Thm Sequent.axiomOfInfinity
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
---        A |- t = u
--- -------------------------- mkAbs v
---   A |- (\v. t) = (\v. u)
---
--- Side condition: The variable v must not be free in A.
--------------------------------------------------------------------------------
-
-mkAbs :: Var -> Thm -> Thm
-mkAbs = undefined
-
--------------------------------------------------------------------------------
---   A |- f = g    B |- x = y
--- ---------------------------- mkApp
---      A u B |- f x = g y
---
--- Side condition: The types of f and x must be compatible.
--------------------------------------------------------------------------------
-
-mkApp :: Thm -> Thm -> Thm
-mkApp = undefined
-
--------------------------------------------------------------------------------
 --
 -- ---------- assume t
 --   t |- t
@@ -129,8 +117,12 @@ mkApp = undefined
 -- Side condition: The term t must have boolean type.
 -------------------------------------------------------------------------------
 
-assume :: Term -> Thm
-assume = undefined
+assume :: Term -> Maybe Thm
+assume tm =
+    fmap Thm $ Sequent.mk h c
+  where
+    c = TermAlpha.mk tm
+    h = Set.singleton c
 
 -------------------------------------------------------------------------------
 --
@@ -138,8 +130,42 @@ assume = undefined
 --   |- (\v. t) u = t[u/v]
 -------------------------------------------------------------------------------
 
-betaConv :: Term -> Thm
-betaConv = undefined
+betaConv :: Term -> Maybe Thm
+betaConv tm = do
+    (vt,u) <- Term.destApp tm
+    (v,t) <- Term.destAbs vt
+    undefined v t u
+
+{-
+    let
+      val (v,t1,t2) =
+          case Term.dest t of
+            TypeTerm.App' (t',t2) =>
+            (case Term.dest t' of
+               TypeTerm.Abs' (v,t1) => (v,t1,t2)
+             | _ => raise Error "Thm.betaConv: term function not a lambda")
+          | _ => raise Error "Thm.betaConv: term not a function application"
+
+      val u =
+          if Term.equalVar v t2 then t1
+          else
+            let
+              val tmMap = TermSubst.singletonMap (v,t2)
+
+              val sub = TermSubst.mkMono tmMap
+            in
+              Option.getOpt (TermSubst.subst sub t1, t1)
+            end
+
+      val axioms = emptyAxioms
+      and hyp = emptyHyp
+      and concl = Term.mkEq (t,u)
+
+      val sequent = Sequent.Sequent {hyp = hyp, concl = concl}
+    in
+      Thm {axioms = axioms, sequent = sequent}
+    end
+-}
 
 -------------------------------------------------------------------------------
 --         A |- t    B |- u
@@ -160,6 +186,28 @@ deductAntisym = undefined
 
 eqMp :: Thm -> Thm -> Thm
 eqMp = undefined
+
+-------------------------------------------------------------------------------
+--        A |- t = u
+-- -------------------------- mkAbs v
+--   A |- (\v. t) = (\v. u)
+--
+-- Side condition: The variable v must not be free in A.
+-------------------------------------------------------------------------------
+
+mkAbs :: Var -> Thm -> Thm
+mkAbs = undefined
+
+-------------------------------------------------------------------------------
+--   A |- f = g    B |- x = y
+-- ---------------------------- mkApp
+--      A u B |- f x = g y
+--
+-- Side condition: The types of f and x must be compatible.
+-------------------------------------------------------------------------------
+
+mkApp :: Thm -> Thm -> Thm
+mkApp = undefined
 
 -------------------------------------------------------------------------------
 --

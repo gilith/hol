@@ -16,6 +16,7 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import HOL.TermAlpha (TermAlpha)
 import qualified HOL.TermAlpha as TermAlpha
+import qualified HOL.TypeVar as TypeVar
 
 -------------------------------------------------------------------------------
 -- Sequents
@@ -40,6 +41,14 @@ mk h c =
 
 dest :: Sequent -> (Set TermAlpha, TermAlpha)
 dest (Sequent {hyp = h, concl = c}) = (h,c)
+
+-------------------------------------------------------------------------------
+-- Type variables
+-------------------------------------------------------------------------------
+
+instance TypeVar.HasVars Sequent where
+  vars (Sequent {hyp = h, concl = c}) =
+      Set.union (TypeVar.vars h) (TypeVar.vars c)
 
 -------------------------------------------------------------------------------
 -- Standard axioms

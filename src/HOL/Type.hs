@@ -12,85 +12,78 @@ module HOL.Type
 where
 
 import Data.Maybe (isJust)
-import Data.Set (Set)
-import qualified Data.Set as Set
 import HOL.Data
-import HOL.Size
+import qualified HOL.TypeData as TypeData
 import qualified HOL.TypeOp as TypeOp
+import qualified HOL.TypeVar as TypeVar
 
 -------------------------------------------------------------------------------
 -- Constructors and destructors
 -------------------------------------------------------------------------------
 
 dest :: Type -> TypeData
-dest (Type d _) = d
+dest (Type d _ _) = d
 
 mk :: TypeData -> Type
-mk d = Type d (size d)
+mk d =
+    Type d sz vs
+  where
+    sz = TypeData.size d
+    vs = TypeVar.vars d
 
 -- Variables
 
 mkVar :: TypeVar -> Type
-mkVar v = mk $ VarType v
+mkVar = mk . TypeData.mkVar
 
 destVar :: Type -> Maybe TypeVar
-destVar ty =
-    case dest ty of
-      VarType v -> Just v
-      _ -> Nothing
+destVar = TypeData.destVar . dest
 
 isVar :: Type -> Bool
 isVar = isJust . destVar
 
 equalVar :: TypeVar -> Type -> Bool
-equalVar v ty =
-    case destVar ty of
-      Just w -> w == v
-      Nothing -> False
+equalVar v = TypeData.equalVar v . dest
 
 -- Operators
 
 mkOp :: TypeOp -> [Type] -> Type
-mkOp t tys = mk $ OpType t tys
+mkOp t = mk . TypeData.mkOp t
 
 destOp :: Type -> Maybe (TypeOp,[Type])
-destOp ty =
-    case dest ty of
-      OpType t tys -> Just (t,tys)
-      _ -> Nothing
+destOp = TypeData.destOp . dest
 
 isOp :: Type -> Bool
 isOp = isJust . destOp
 
 destGivenOp :: TypeOp -> Type -> Maybe [Type]
-destGivenOp t ty =
-    case destOp ty of
-      Just (u,tys) -> if u == t then Just tys else Nothing
-      Nothing -> Nothing
+destGivenOp t = TypeData.destGivenOp t . dest
 
 isGivenOp :: TypeOp -> Type -> Bool
 isGivenOp t = isJust . destGivenOp t
 
+-------------------------------------------------------------------------------
+-- Size is measured as the number of TypeData constructors
+-------------------------------------------------------------------------------
+
+size :: Type -> Size
+size (Type _ s _) = s
+
+-------------------------------------------------------------------------------
+-- Type syntax
+-------------------------------------------------------------------------------
+
 isNullaryOp :: TypeOp -> Type -> Bool
-isNullaryOp t ty =
-    case destGivenOp t ty of
-      Just tys -> null tys
-      Nothing -> False
+isNullaryOp t = TypeData.isNullaryOp t . dest
 
 destUnaryOp :: TypeOp -> Type -> Maybe Type
-destUnaryOp t ty =
-    case destGivenOp t ty of
-      Just [ty0] -> Just ty0
-      _ -> Nothing
+destUnaryOp t = TypeData.destUnaryOp t . dest
 
 isUnaryOp :: TypeOp -> Type -> Bool
 isUnaryOp t = isJust . destUnaryOp t
 
 destBinaryOp :: TypeOp -> Type -> Maybe (Type,Type)
-destBinaryOp t ty =
-    case destGivenOp t ty of
-      Just [ty0,ty1] -> Just (ty0,ty1)
-      _ -> Nothing
+destBinaryOp t = TypeData.destBinaryOp t . dest
 
 isBinaryOp :: TypeOp -> Type -> Bool
 isBinaryOp t = isJust . destBinaryOp t

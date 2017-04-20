@@ -22,11 +22,12 @@ Library
     HOL.Data
     HOL.Name
     HOL.Sequent
-    HOL.Size
     HOL.Term
     HOL.TermAlpha
+    HOL.TermData
     HOL.Thm
     HOL.Type
+    HOL.TypeData
     HOL.TypeOp
     HOL.TypeVar
     HOL.Var

@@ -15,58 +15,40 @@ import Data.Maybe (isJust)
 import qualified Data.Map as Map
 import qualified HOL.Const as Const
 import HOL.Data
-import HOL.Size
+import qualified HOL.TermData as TermData
 import qualified HOL.Type as Type
+import qualified HOL.TypeVar as TypeVar
 import qualified HOL.Var as Var
-
--------------------------------------------------------------------------------
--- The type of a (well-formed) term
--------------------------------------------------------------------------------
-
-typeOf :: Term -> Type
-typeOf (Term _ _ ty) = ty
-
-typeOfData :: TermData -> Type
-typeOfData (ConstTerm _ ty) = ty
-typeOfData (VarTerm v) = Var.typeOf v
-typeOfData (AppTerm f _) =
-    case Type.range (typeOf f) of
-      Just ty -> ty
-      Nothing -> error "ill-formed AppTerm"
-typeOfData (AbsTerm v b) = Type.mkFun (Var.typeOf v) (typeOf b)
-
-isBool :: Term -> Bool
-isBool = Type.isBool . typeOf
 
 -------------------------------------------------------------------------------
 -- Constructors and destructors
 -------------------------------------------------------------------------------
 
 dest :: Term -> TermData
-dest (Term d _ _) = d
+dest (Term d _ _ _ _) = d
 
 mk :: TermData -> Term
-mk d = Term d (size d) (typeOfData d)
+mk d =
+    Term d sz ty tvs fvs
+  where
+    sz = TermData.size d
+    ty = TermData.typeOf d
+    tvs = TypeVar.vars d
+    fvs = Var.free d
 
 -- Constants
 
 mkConst :: Const -> Type -> Term
-mkConst c ty = mk $ ConstTerm c ty
+mkConst c = mk . TermData.mkConst c
 
 destConst :: Term -> Maybe (Const,Type)
-destConst tm =
-    case dest tm of
-      ConstTerm c ty-> Just (c,ty)
-      _ -> Nothing
+destConst = TermData.destConst . dest
 
 isConst :: Term -> Bool
 isConst = isJust . destConst
 
 destGivenConst :: Const -> Term -> Maybe Type
-destGivenConst c tm =
-    case destConst tm of
-      Just (d,ty) -> if d == c then Just ty else Nothing
-      Nothing -> Nothing
+destGivenConst c = TermData.destGivenConst c . dest
 
 isGivenConst :: Const -> Term -> Bool
 isGivenConst c = isJust . destGivenConst c
@@ -74,35 +56,24 @@ isGivenConst c = isJust . destGivenConst c
 -- Variables
 
 mkVar :: Var -> Term
-mkVar v = mk $ VarTerm v
+mkVar = mk . TermData.mkVar
 
 destVar :: Term -> Maybe Var
-destVar tm =
-    case dest tm of
-      VarTerm v -> Just v
-      _ -> Nothing
+destVar = TermData.destVar . dest
 
 isVar :: Term -> Bool
 isVar = isJust . destVar
 
 equalVar :: Var -> Term -> Bool
-equalVar v tm =
-    case destVar tm of
-      Just w -> w == v
-      Nothing -> False
+equalVar v = TermData.equalVar v . dest
 
 -- Function application
 
 mkApp :: Term -> Term -> Maybe Term
-mkApp f x = do
-    ty <- Type.domain (typeOf f)
-    if typeOf x == ty then Just $ mk $ AppTerm f x else Nothing
+mkApp f x = fmap mk $ TermData.mkApp f x
 
 destApp :: Term -> Maybe (Term,Term)
-destApp tm =
-    case dest tm of
-      AppTerm f x -> Just (f,x)
-      _ -> Nothing
+destApp = TermData.destApp . dest
 
 isApp :: Term -> Bool
 isApp = isJust . destApp
@@ -136,13 +107,10 @@ stripApp =
 -- Lambda abstraction
 
 mkAbs :: Var -> Term -> Term
-mkAbs v b = mk $ AbsTerm v b
+mkAbs v b = mk $ TermData.mkAbs v b
 
 destAbs :: Term -> Maybe (Var,Term)
-destAbs tm =
-    case dest tm of
-      AbsTerm v b -> Just (v,b)
-      _ -> Nothing
+destAbs = TermData.destAbs . dest
 
 isAbs :: Term -> Bool
 isAbs = isJust . destAbs
@@ -156,6 +124,23 @@ stripAbs tm =
     case destAbs tm of
       Nothing -> ([],tm)
       Just (v,t) -> (v : vs, b) where (vs,b) = stripAbs t
+
+-------------------------------------------------------------------------------
+-- Size is measured as the number of TermData constructors
+-------------------------------------------------------------------------------
+
+size :: Term -> Size
+size (Term _ s _ _ _) = s
+
+-------------------------------------------------------------------------------
+-- The type of a (well-formed) term
+-------------------------------------------------------------------------------
+
+typeOf :: Term -> Type
+typeOf (Term _ _ ty _ _) = ty
+
+isBool :: Term -> Bool
+isBool = Type.isBool . typeOf
 
 -------------------------------------------------------------------------------
 -- A total order on terms modulo alpha-equivalence
