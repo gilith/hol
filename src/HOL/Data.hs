@@ -88,8 +88,8 @@ data Const =
 data ConstProv =
     UndefConstProv
   | DefConstProv ConstDef
-  | AbsConstProv TypeOp
-  | RepConstProv TypeOp
+  | AbsConstProv TypeOpDef
+  | RepConstProv TypeOpDef
   deriving (Eq,Ord,Show)
 
 data ConstDef =

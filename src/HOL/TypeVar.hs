@@ -31,11 +31,14 @@ equalName :: Name -> TypeVar -> Bool
 equalName n (TypeVar m) = m == n
 
 -------------------------------------------------------------------------------
--- Named type variables
+-- Named type variables (used in standard axioms)
 -------------------------------------------------------------------------------
 
 alpha :: TypeVar
 alpha = mk (mkGlobal "A")
+
+beta :: TypeVar
+beta = mk (mkGlobal "B")
 
 -------------------------------------------------------------------------------
 -- Collecting type variables

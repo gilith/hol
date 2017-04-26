@@ -71,8 +71,8 @@ axiomOfExtensionality =
       Nothing -> error "axiomOfExtensionality shouldn't fail"
   where
     axiom = do
-        let ty0 = Type.mkVar $ TypeVar.mk $ mkGlobal "A"
-        let ty1 = Type.mkVar $ TypeVar.mk $ mkGlobal "B"
+        let ty0 = Type.alpha
+        let ty1 = Type.beta
         let ty2 = Type.mkFun ty0 ty1
         let ty3 = Type.bool
         let ty4 = Type.mkFun ty2 ty3
@@ -104,7 +104,7 @@ axiomOfChoice =
       Nothing -> error "axiomOfChoice shouldn't fail"
   where
     axiom = do
-        let ty0 = Type.mkVar $ TypeVar $ mkGlobal "A"
+        let ty0 = Type.alpha
         let ty1 = Type.bool
         let ty2 = Type.mkFun ty0 ty1
         let ty3 = Type.mkFun ty2 ty1

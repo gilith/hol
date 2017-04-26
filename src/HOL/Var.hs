@@ -40,6 +40,12 @@ typeOf (Var _ ty) = ty
 class HasFree a where
   free :: a -> Set Var
 
+  freeIn :: Var -> a -> Bool
+  freeIn v x = Set.member v (free x)
+
+  notFreeIn :: Var -> a -> Bool
+  notFreeIn v x = Set.notMember v (free x)
+
 instance HasFree Var where
   free v = Set.singleton v
 
@@ -60,3 +66,14 @@ instance HasFree TermData where
 
 instance HasFree Term where
   free (Term _ _ _ _ vs) = vs
+
+-------------------------------------------------------------------------------
+-- Fresh variables
+-------------------------------------------------------------------------------
+
+renameAvoiding :: Set Name -> Var -> Var
+renameAvoiding avoid v =
+    if n' == n then v else Var n' ty
+  where
+    Var n ty = v
+    n' = variantAvoiding avoid n

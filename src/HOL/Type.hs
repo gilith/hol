@@ -89,6 +89,16 @@ isBinaryOp :: TypeOp -> Type -> Bool
 isBinaryOp t = isJust . destBinaryOp t
 
 -------------------------------------------------------------------------------
+-- Named type variables (used in standard axioms)
+-------------------------------------------------------------------------------
+
+alpha :: Type
+alpha = mkVar TypeVar.alpha
+
+beta :: Type
+beta = mkVar TypeVar.beta
+
+-------------------------------------------------------------------------------
 -- Primitive types
 -------------------------------------------------------------------------------
 

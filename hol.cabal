@@ -22,6 +22,7 @@ Library
     HOL.Data
     HOL.Name
     HOL.Sequent
+    HOL.Subst
     HOL.Term
     HOL.TermAlpha
     HOL.TermData
@@ -29,5 +30,6 @@ Library
     HOL.Type
     HOL.TypeData
     HOL.TypeOp
+    HOL.TypeSubst
     HOL.TypeVar
     HOL.Var
