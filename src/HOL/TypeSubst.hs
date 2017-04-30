@@ -14,6 +14,8 @@ where
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
+import Data.Set (Set)
+import qualified Data.Set as Set
 import HOL.Data
 import qualified HOL.Type as Type
 
@@ -39,8 +41,17 @@ dest (TypeSubst m _) = m
 fromList :: [(TypeVar,Type)] -> TypeSubst
 fromList = mk . Map.fromList
 
+empty :: TypeSubst
+empty = fromList []
+
+singleton :: TypeVar -> Type -> TypeSubst
+singleton v ty = fromList [(v,ty)]
+
+null :: TypeSubst -> Bool
+null = Map.null . dest
+
 -------------------------------------------------------------------------------
--- Primitive substitutions
+-- Primitive type substitutions
 -------------------------------------------------------------------------------
 
 varSubst :: TypeVar -> TypeSubst -> Maybe Type
@@ -51,42 +62,62 @@ dataSubst (VarType v) s = (varSubst v s, s)
 dataSubst (OpType t tys) s =
     (fmap (Type.mkOp t) tys', s')
   where
-    (tys',s') = sharingSubst tys s
+    (tys',s') = basicSubst tys s
 
 -------------------------------------------------------------------------------
--- General substitutions
+-- General type substitutions
 -------------------------------------------------------------------------------
 
 class CanSubst a where
-  -- these substitution functions return Nothing if unchanged
+  --
+  -- This is the primitive substitution function for types to implement,
+  -- which has the following properties:
+  --  1. Can assume the substitution is not null
+  --  2. Returns Nothing if the argument is unchanged by the substitution
+  --  3. Returns the substitution with an updated type cache
+  --
+  basicSubst :: a -> TypeSubst -> (Maybe a, TypeSubst)
+
+  --
+  -- These substitution functions return Nothing if unchanged
+  --
   sharingSubst :: a -> TypeSubst -> (Maybe a, TypeSubst)
+  sharingSubst x s =
+      if HOL.TypeSubst.null s then (Nothing,s) else basicSubst x s
 
   subst :: TypeSubst -> a -> Maybe a
   subst s x = fst $ sharingSubst x s
 
-  -- these substitution functions return their argument if unchanged
+  --
+  -- These substitution functions return their argument if unchanged
+  --
   trySharingSubst :: a -> TypeSubst -> (a,TypeSubst)
-  trySharingSubst x s =
-      (fromMaybe x y, s')
-    where
-      (y,s') = sharingSubst x s
+  trySharingSubst x s = (fromMaybe x x', s') where (x',s') = sharingSubst x s
 
   trySubst :: TypeSubst -> a -> a
   trySubst s x = fromMaybe x (subst s x)
 
 instance CanSubst a => CanSubst [a] where
-  sharingSubst [] s = (Nothing,s)
-  sharingSubst (h : t) s =
+  basicSubst [] s = (Nothing,s)
+  basicSubst (h : t) s =
       (l',s'')
     where
-      (h',s') = sharingSubst h s
-      (t',s'') = sharingSubst t s'
+      (h',s') = basicSubst h s
+      (t',s'') = basicSubst t s'
       l' = case h' of
              Nothing -> fmap ((:) h) t'
              Just x -> Just (x : fromMaybe t t')
 
+instance (Ord a, CanSubst a) => CanSubst (Set a) where
+  basicSubst xs s =
+      (xs',s')
+    where
+      xl = Set.toList xs
+      (xl',s') = basicSubst xl s
+      xs' = fmap Set.fromList xl'
+
 instance CanSubst Type where
-  sharingSubst ty s =
+  basicSubst ty s =
       case Map.lookup ty c of
         Just ty' -> (ty',s)
         Nothing ->
@@ -97,7 +128,7 @@ instance CanSubst Type where
       TypeSubst _ c = s
 
 instance CanSubst Var where
-  sharingSubst (Var n ty) s =
+  basicSubst (Var n ty) s =
       (fmap (Var n) ty', s')
     where
-      (ty',s') = sharingSubst ty s
+      (ty',s') = basicSubst ty s

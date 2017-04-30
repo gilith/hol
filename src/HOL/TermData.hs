@@ -115,7 +115,7 @@ typeOf (VarTerm v) = Var.typeOf v
 typeOf (AppTerm f _) =
     case Type.range fty of
       Just ty -> ty
-      Nothing -> error "ill-formed AppTerm"
+      Nothing -> error "HOL.TermData.typeOf: bad types in AppTerm"
   where
     Term _ _ fty _ _ = f
 typeOf (AbsTerm v b) =

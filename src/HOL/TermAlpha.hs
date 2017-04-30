@@ -15,6 +15,7 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import HOL.Data
 import HOL.Name
+import qualified HOL.Subst as Subst
 import qualified HOL.Term as Term
 import qualified HOL.Type as Type
 import qualified HOL.TypeVar as TypeVar
@@ -61,6 +62,24 @@ instance TypeVar.HasVars TermAlpha where
   vars (TermAlpha tm) = TypeVar.vars tm
 
 -------------------------------------------------------------------------------
+-- Free variables
+-------------------------------------------------------------------------------
+
+instance Var.HasFree TermAlpha where
+  free (TermAlpha tm) = Var.free tm
+
+-------------------------------------------------------------------------------
+-- Substitutions
+-------------------------------------------------------------------------------
+
+instance Subst.CanSubst TermAlpha where
+  basicSubst (TermAlpha tm) sub =
+      (atm',sub')
+    where
+      (tm',sub') = Subst.basicSubst tm sub
+      atm' = fmap TermAlpha tm'
+
+-------------------------------------------------------------------------------
 -- Standard axioms
 -------------------------------------------------------------------------------
 
@@ -68,7 +87,7 @@ axiomOfExtensionality :: TermAlpha
 axiomOfExtensionality =
     case axiom of
       Just tm -> mk tm
-      Nothing -> error "axiomOfExtensionality shouldn't fail"
+      Nothing -> error "HOL.TermAlpha.axiomOfExtensionality"
   where
     axiom = do
         let ty0 = Type.alpha
@@ -101,7 +120,7 @@ axiomOfChoice :: TermAlpha
 axiomOfChoice =
     case axiom of
       Just tm -> mk tm
-      Nothing -> error "axiomOfChoice shouldn't fail"
+      Nothing -> error "HOL.TermAlpha.axiomOfChoice"
   where
     axiom = do
         let ty0 = Type.alpha
@@ -172,7 +191,7 @@ axiomOfInfinity :: TermAlpha
 axiomOfInfinity =
     case axiom of
       Just tm -> mk tm
-      Nothing -> error "axiomOfInfinity shouldn't fail"
+      Nothing -> error "HOL.TermAlpha.axiomOfInfinity"
   where
     axiom = do
         let ty0 = Type.ind
@@ -313,4 +332,4 @@ standardAxiomName tm =
      if tm == axiomOfExtensionality then "AXIOM OF EXTENSIONALITY"
      else if tm == axiomOfChoice then "AXIOM OF CHOICE"
      else if tm == axiomOfInfinity then "AXIOM OF INFINITY"
-     else error "not a standard axiom"
+     else error "HOL.TermAlpha.standardAxiomName: not a standard axiom"

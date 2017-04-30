@@ -46,6 +46,9 @@ class HasFree a where
   notFreeIn :: Var -> a -> Bool
   notFreeIn v x = Set.notMember v (free x)
 
+  closed :: a -> Bool
+  closed = Set.null . free
+
 instance HasFree Var where
   free v = Set.singleton v
 

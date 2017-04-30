@@ -12,11 +12,14 @@ module HOL.Sequent
 where
 
 import qualified Data.Foldable as Foldable
+import Data.Maybe (isNothing,fromMaybe)
 import Data.Set (Set)
 import qualified Data.Set as Set
+import qualified HOL.Subst as Subst
 import HOL.TermAlpha (TermAlpha)
 import qualified HOL.TermAlpha as TermAlpha
 import qualified HOL.TypeVar as TypeVar
+import qualified HOL.Var as Var
 
 -------------------------------------------------------------------------------
 -- Sequents
@@ -39,8 +42,26 @@ mk h c =
     b = Foldable.all TermAlpha.isBool h && TermAlpha.isBool c
     sq = Sequent {hyp = h, concl = c}
 
+mkUnsafe :: Set TermAlpha -> TermAlpha -> Sequent
+mkUnsafe h c =
+    case mk h c of
+      Just sq -> sq
+      Nothing -> error "HOL.Sequent.mk failed"
+
 dest :: Sequent -> (Set TermAlpha, TermAlpha)
 dest (Sequent {hyp = h, concl = c}) = (h,c)
+
+nullHyp :: Sequent -> Bool
+nullHyp = Set.null . hyp
+
+mkNullHyp :: TermAlpha -> Maybe Sequent
+mkNullHyp = mk Set.empty
+
+mkNullHypUnsafe :: TermAlpha -> Sequent
+mkNullHypUnsafe c =
+    case mkNullHyp c of
+      Just sq -> sq
+      Nothing -> error "HOL.Sequent.mkNullHyp failed"
 
 -------------------------------------------------------------------------------
 -- Type variables
@@ -51,26 +72,38 @@ instance TypeVar.HasVars Sequent where
       Set.union (TypeVar.vars h) (TypeVar.vars c)
 
 -------------------------------------------------------------------------------
+-- Free variables
+-------------------------------------------------------------------------------
+
+instance Var.HasFree Sequent where
+  free (Sequent {hyp = h, concl = c}) =
+      Set.union (Var.free h) (Var.free c)
+
+-------------------------------------------------------------------------------
+-- Substitutions
+-------------------------------------------------------------------------------
+
+instance Subst.CanSubst Sequent where
+  basicSubst (Sequent {hyp = h, concl = c}) sub =
+      (seq',sub'')
+    where
+      (h',sub') = Subst.basicSubst h sub
+      (c',sub'') = Subst.basicSubst c sub'
+      seq' = if isNothing h' && isNothing c' then Nothing
+             else Just $ Sequent {hyp = fromMaybe h h', concl = fromMaybe c c'}
+
+-------------------------------------------------------------------------------
 -- Standard axioms
 -------------------------------------------------------------------------------
 
 axiomOfExtensionality :: Sequent
-axiomOfExtensionality =
-    case mk Set.empty TermAlpha.axiomOfExtensionality of
-      Just sq -> sq
-      Nothing -> error "axiomOfExtensionality shouldn't fail"
+axiomOfExtensionality = mkNullHypUnsafe TermAlpha.axiomOfExtensionality
 
 axiomOfChoice :: Sequent
-axiomOfChoice =
-    case mk Set.empty TermAlpha.axiomOfChoice of
-      Just sq -> sq
-      Nothing -> error "axiomOfChoice shouldn't fail"
+axiomOfChoice = mkNullHypUnsafe TermAlpha.axiomOfChoice
 
 axiomOfInfinity :: Sequent
-axiomOfInfinity =
-    case mk Set.empty TermAlpha.axiomOfInfinity of
-      Just sq -> sq
-      Nothing -> error "axiomOfInfinity shouldn't fail"
+axiomOfInfinity = mkNullHypUnsafe  TermAlpha.axiomOfInfinity
 
 standardAxioms :: Set Sequent
 standardAxioms =

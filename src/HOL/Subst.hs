@@ -44,6 +44,15 @@ dest (Subst ts m _) = (ts,m)
 fromList :: [(TypeVar,Type)] -> [(Var,Term)] -> Subst
 fromList ts = mk (TypeSubst.fromList ts) . Map.fromList
 
+empty :: Subst
+empty = fromList [] []
+
+singleton :: Var -> Term -> Subst
+singleton v tm = fromList [] [(v,tm)]
+
+null :: Subst -> Bool
+null (Subst ts m _) = TypeSubst.null ts && Map.null m
+
 -------------------------------------------------------------------------------
 -- Avoiding capture
 -------------------------------------------------------------------------------
@@ -63,7 +72,7 @@ capturableVars v =
         Set.union (termVars f f') (termVars x x')
     dataVars (AbsTerm _ b) (AbsTerm v' b') =  -- cannot be variable v
         Set.insert v' (termVars b b')
-    dataVars _ _ = error "bad arguments"
+    dataVars _ _ = error "HOL.Subst.capturableVars.dataVars"
 
 renameBoundVar :: Var -> Term -> Term -> Term -> Term
 renameBoundVar v v' =
@@ -85,9 +94,7 @@ renameBoundVar v v' =
     dataRename (VarTerm _) _ cache =  -- must be variable v
         (v',cache)
     dataRename (AppTerm f x) (AppTerm f' x') cache =
-        case Term.mkApp f'' x'' of
-          Just tm'' -> (tm'',cache'')
-          Nothing -> error "bad types in mkApp"
+        (Term.mkAppUnsafe f'' x'', cache'')
       where
         (f'',cache') = termRename f f' cache
         (x'',cache'') = termRename x x' cache'
@@ -95,7 +102,7 @@ renameBoundVar v v' =
         (Term.mkAbs w' b'', cache')
       where
         (b'',cache') = termRename b b' cache
-    dataRename _ _ _ = error "dataRename: bad arguments"
+    dataRename _ _ _ = error "HOL.Subst.renameBoundVar.dataRename"
 
 avoidCapture :: Bool -> Var -> Var -> Term -> Term -> (Var,Term)
 avoidCapture vSub' v v' b b' =
@@ -115,7 +122,7 @@ varSubst v s =
     (tm,s')
   where
     -- first apply the type substitution
-    (v',s') = sharingSubst v s
+    (v',s') = basicSubst v s
     -- then apply the term substitution
     tm = case v' of
            Nothing -> Map.lookup v m
@@ -126,25 +133,21 @@ dataSubst :: TermData -> Subst -> (Maybe Term, Subst)
 dataSubst (ConstTerm c ty) s =
     (fmap (Term.mkConst c) ty', s')
   where
-    (ty',s') = sharingSubst ty s
+    (ty',s') = basicSubst ty s
 dataSubst (VarTerm v) s = varSubst v s
 dataSubst (AppTerm f x) s =
     (tm',s'')
   where
-    (f',s') = sharingSubst f s
-    (x',s'') = sharingSubst x s'
+    (f',s') = basicSubst f s
+    (x',s'') = basicSubst x s'
     tm' = case f' of
-            Nothing -> fmap (app f) x'
-            Just g -> Just (app g $ fromMaybe x x')
-    app g y =
-        case Term.mkApp g y of
-          Just gy -> gy
-          Nothing -> error "dataSubst: bad types in AppTerm"
+            Nothing -> fmap (Term.mkAppUnsafe f) x'
+            Just g -> Just (Term.mkAppUnsafe g $ fromMaybe x x')
 dataSubst (AbsTerm v b) s =
     (tm',s'')
   where
-    (v',s') = sharingSubst v s
-    (b',s'') = sharingSubst b s'
+    (v',s') = basicSubst v s
+    (b',s'') = basicSubst b s'
     tm' = if isNothing v' && isNothing b' then Nothing
           else Just (Term.mkAbs v'' b'')
     (v'',b'') = avoidCapture wSub v w b (fromMaybe b b')
@@ -156,49 +159,74 @@ dataSubst (AbsTerm v b) s =
 -------------------------------------------------------------------------------
 
 class CanSubst a where
-  -- these substitution functions return Nothing if unchanged
+  --
+  -- This is the primitive substitution function for types to implement,
+  -- which has the following properties:
+  --  1. Can assume the substitution is not null
+  --  2. Returns Nothing if the argument is unchanged by the substitution
+  --  3. Returns the substitution with updated type and term caches
+  --
+  basicSubst :: a -> Subst -> (Maybe a, Subst)
+
+  --
+  -- These substitution functions return Nothing if unchanged
+  --
   sharingSubst :: a -> Subst -> (Maybe a, Subst)
+  sharingSubst x s = if HOL.Subst.null s then (Nothing,s) else basicSubst x s
 
   subst :: Subst -> a -> Maybe a
   subst s x = fst $ sharingSubst x s
 
-  -- these substitution functions return their argument if unchanged
+  typeSubst :: TypeSubst -> a -> Maybe a
+  typeSubst ts = subst $ mk ts Map.empty
+
+  --
+  -- These substitution functions return their argument if unchanged
+  --
   trySharingSubst :: a -> Subst -> (a,Subst)
-  trySharingSubst x s =
-      (fromMaybe x y, s')
-    where
-      (y,s') = sharingSubst x s
+  trySharingSubst x s = (fromMaybe x x', s') where (x',s') = sharingSubst x s
 
   trySubst :: Subst -> a -> a
   trySubst s x = fromMaybe x (subst s x)
 
+  tryTypeSubst :: TypeSubst -> a -> a
+  tryTypeSubst ts x = fromMaybe x (typeSubst ts x)
+
 instance CanSubst a => CanSubst [a] where
-  sharingSubst [] s = (Nothing,s)
-  sharingSubst (h : t) s =
+  basicSubst [] s = (Nothing,s)
+  basicSubst (h : t) s =
       (l',s'')
     where
-      (h',s') = sharingSubst h s
-      (t',s'') = sharingSubst t s'
+      (h',s') = basicSubst h s
+      (t',s'') = basicSubst t s'
       l' = case h' of
              Nothing -> fmap ((:) h) t'
              Just x -> Just (x : fromMaybe t t')
 
+instance (Ord a, CanSubst a) => CanSubst (Set a) where
+  basicSubst xs s =
+      (xs',s')
+    where
+      xl = Set.toList xs
+      (xl',s') = basicSubst xl s
+      xs' = fmap Set.fromList xl'
+
 instance CanSubst Type where
-  sharingSubst ty s =
+  basicSubst ty s =
       (ty', Subst ts' m c)
     where
       Subst ts m c = s
       (ty',ts') = TypeSubst.sharingSubst ty ts
 
--- this only applies the type substitution
+-- This only applies the type substitution
 instance CanSubst Var where
-  sharingSubst (Var n ty) s =
+  basicSubst (Var n ty) s =
       (fmap (Var n) ty', s')
     where
-      (ty',s') = sharingSubst ty s
+      (ty',s') = basicSubst ty s
 
 instance CanSubst Term where
-  sharingSubst tm s =
+  basicSubst tm s =
       case Map.lookup tm c of
         Just tm' -> (tm',s)
         Nothing ->

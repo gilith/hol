@@ -72,6 +72,12 @@ equalVar v = TermData.equalVar v . dest
 mkApp :: Term -> Term -> Maybe Term
 mkApp f x = fmap mk $ TermData.mkApp f x
 
+mkAppUnsafe :: Term -> Term -> Term
+mkAppUnsafe f x =
+    case mkApp f x of
+      Just tm -> tm
+      Nothing -> error "HOL.Term.mkApp failed"
+
 destApp :: Term -> Maybe (Term,Term)
 destApp = TermData.destApp . dest
 
@@ -94,6 +100,12 @@ listMkApp tm [] = Just tm
 listMkApp f (x : xs) = do
     fx <- mkApp f x
     listMkApp fx xs
+
+listMkAppUnsafe :: Term -> [Term] -> Term
+listMkAppUnsafe f xs =
+    case listMkApp f xs of
+      Just tm -> tm
+      Nothing -> error "HOL.Term.listMkApp failed"
 
 stripApp :: Term -> (Term,[Term])
 stripApp =
@@ -210,6 +222,12 @@ isEqConst = isJust . destEqConst
 mkEq :: Term -> Term -> Maybe Term
 mkEq l r = listMkApp c [l,r] where c = mkEqConst (typeOf l)
 
+mkEqUnsafe :: Term -> Term -> Term
+mkEqUnsafe l r =
+    case mkEq l r of
+      Just tm -> tm
+      Nothing -> error "HOL.Term.mkEq failed"
+
 destEq :: Term -> Maybe (Term,Term)
 destEq tm = do
     (el,r) <- destApp tm
@@ -226,10 +244,7 @@ rhs :: Term -> Maybe Term
 rhs = fmap snd . destEq
 
 mkRefl :: Term -> Term
-mkRefl tm =
-    case mkEq tm tm of
-      Just r -> r
-      Nothing -> error "mkRefl shouldn't fail"
+mkRefl tm = mkEqUnsafe tm tm
 
 destRefl :: Term -> Maybe Term
 destRefl tm = do
@@ -254,9 +269,7 @@ isSelectConst = isJust . destSelectConst
 
 mkSelect :: Var -> Term -> Term
 mkSelect v b =
-    case mkApp c (mkAbs v b) of
-      Just tm -> tm
-      Nothing -> error "mkSelect shouldn't fail"
+    mkAppUnsafe c (mkAbs v b)
   where
     c = mkSelectConst $ Var.typeOf v
 
