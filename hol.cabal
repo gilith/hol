@@ -14,19 +14,24 @@ description:
 Library
   build-depends:
     base >= 4.0 && < 5.0,
-    containers >= 0.5 && < 0.6
+    bytestring >= 0.9 && < 1.0,
+    containers >= 0.5 && < 0.6,
+    pretty >= 1.1 && < 1.2,
+    text >= 0.11 && < 0.12
   hs-source-dirs: src
   ghc-options: -Wall
   exposed-modules:
     HOL.Const
     HOL.Data
     HOL.Name
+    HOL.Print
     HOL.Rule
     HOL.Sequent
     HOL.Subst
     HOL.Term
     HOL.TermAlpha
     HOL.TermData
+    HOL.Theory
     HOL.Thm
     HOL.Type
     HOL.TypeData

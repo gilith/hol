@@ -33,6 +33,7 @@ where
 import Control.Monad (guard)
 import Data.Set (Set)
 import qualified Data.Set as Set
+import qualified HOL.Const as Const
 import HOL.Data
 import HOL.Name
 import HOL.Sequent (Sequent)
@@ -43,6 +44,7 @@ import qualified HOL.Term as Term
 import HOL.TermAlpha (TermAlpha)
 import qualified HOL.TermAlpha as TermAlpha
 import qualified HOL.Type as Type
+import qualified HOL.TypeOp as TypeOp
 import qualified HOL.TypeVar as TypeVar
 import qualified HOL.Var as Var
 
@@ -74,14 +76,28 @@ nullHyp = Sequent.nullHyp . dest
 -------------------------------------------------------------------------------
 
 instance TypeVar.HasVars Thm where
-  vars (Thm sq) = TypeVar.vars sq
+  vars = TypeVar.vars . dest
+
+-------------------------------------------------------------------------------
+-- Type operators
+-------------------------------------------------------------------------------
+
+instance TypeOp.HasOps Thm where
+  ops = TypeOp.ops . dest
+
+-------------------------------------------------------------------------------
+-- Constants
+-------------------------------------------------------------------------------
+
+instance Const.HasConsts Thm where
+  consts = Const.consts . dest
 
 -------------------------------------------------------------------------------
 -- Free variables
 -------------------------------------------------------------------------------
 
 instance Var.HasFree Thm where
-  free (Thm sq) = Var.free sq
+  free = Var.free . dest
 
 -------------------------------------------------------------------------------
 -- Substitutions

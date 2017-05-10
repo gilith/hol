@@ -50,7 +50,7 @@ class HasFree a where
   closed = Set.null . free
 
 instance HasFree Var where
-  free v = Set.singleton v
+  free = Set.singleton
 
 instance HasFree a => HasFree [a] where
   free = Foldable.foldMap free

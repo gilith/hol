@@ -48,7 +48,7 @@ class HasVars a where
   vars :: a -> Set TypeVar
 
 instance HasVars TypeVar where
-  vars v = Set.singleton v
+  vars = Set.singleton
 
 instance HasVars a => HasVars [a] where
   vars = Foldable.foldMap vars

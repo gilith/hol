@@ -13,11 +13,13 @@ where
 
 import Data.Set (Set)
 import qualified Data.Set as Set
+import qualified HOL.Const as Const
 import HOL.Data
 import HOL.Name
 import qualified HOL.Subst as Subst
 import qualified HOL.Term as Term
 import qualified HOL.Type as Type
+import qualified HOL.TypeOp as TypeOp
 import qualified HOL.TypeVar as TypeVar
 import qualified HOL.Var as Var
 
@@ -59,14 +61,28 @@ isBool = Type.isBool . typeOf
 -------------------------------------------------------------------------------
 
 instance TypeVar.HasVars TermAlpha where
-  vars (TermAlpha tm) = TypeVar.vars tm
+  vars = TypeVar.vars . dest
+
+-------------------------------------------------------------------------------
+-- Type operators
+-------------------------------------------------------------------------------
+
+instance TypeOp.HasOps TermAlpha where
+  ops = TypeOp.ops . dest
+
+-------------------------------------------------------------------------------
+-- Constants
+-------------------------------------------------------------------------------
+
+instance Const.HasConsts TermAlpha where
+  consts = Const.consts . dest
 
 -------------------------------------------------------------------------------
 -- Free variables
 -------------------------------------------------------------------------------
 
 instance Var.HasFree TermAlpha where
-  free (TermAlpha tm) = Var.free tm
+  free = Var.free . dest
 
 -------------------------------------------------------------------------------
 -- Substitutions

@@ -15,9 +15,11 @@ import qualified Data.Foldable as Foldable
 import Data.Maybe (isNothing,fromMaybe)
 import Data.Set (Set)
 import qualified Data.Set as Set
+import qualified HOL.Const as Const
 import qualified HOL.Subst as Subst
 import HOL.TermAlpha (TermAlpha)
 import qualified HOL.TermAlpha as TermAlpha
+import qualified HOL.TypeOp as TypeOp
 import qualified HOL.TypeVar as TypeVar
 import qualified HOL.Var as Var
 
@@ -70,6 +72,22 @@ mkNullHypUnsafe c =
 instance TypeVar.HasVars Sequent where
   vars (Sequent {hyp = h, concl = c}) =
       Set.union (TypeVar.vars h) (TypeVar.vars c)
+
+-------------------------------------------------------------------------------
+-- Type operators
+-------------------------------------------------------------------------------
+
+instance TypeOp.HasOps Sequent where
+  ops (Sequent {hyp = h, concl = c}) =
+      Set.union (TypeOp.ops h) (TypeOp.ops c)
+
+-------------------------------------------------------------------------------
+-- Constants
+-------------------------------------------------------------------------------
+
+instance Const.HasConsts Sequent where
+  consts (Sequent {hyp = h, concl = c}) =
+      Set.union (Const.consts h) (Const.consts c)
 
 -------------------------------------------------------------------------------
 -- Free variables

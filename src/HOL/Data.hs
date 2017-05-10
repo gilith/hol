@@ -51,6 +51,7 @@ data TypeOpDef =
 
 data Type =
     Type TypeData Size (Set TypeVar)
+  deriving Show
 
 data TypeData =
     VarType TypeVar
@@ -65,9 +66,6 @@ instance Ord Type where
     case compare s1 s2 of
       EQ -> compare d1 d2
       x -> x
-
-instance Show Type where
-  show (Type d _ _) = show d
 
 -------------------------------------------------------------------------------
 -- Variables
@@ -102,6 +100,7 @@ data ConstDef =
 
 data Term =
     Term TermData Size Type (Set TypeVar) (Set Var)
+  deriving Show
 
 data TermData =
     ConstTerm Const Type
@@ -118,6 +117,3 @@ instance Ord Term where
     case compare s1 s2 of
       EQ -> compare d1 d2
       x -> x
-
-instance Show Term where
-  show (Term d _ _ _ _) = show d

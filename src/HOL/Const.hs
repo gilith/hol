@@ -11,6 +11,7 @@ portability: portable
 module HOL.Const
 where
 
+import qualified Data.Foldable as Foldable
 import Data.Set (Set)
 import qualified Data.Set as Set
 import HOL.Name
@@ -33,6 +34,31 @@ isUndef :: Const -> Bool
 isUndef (Const _ p) = p == UndefConstProv
 
 -------------------------------------------------------------------------------
+-- Collecting constants
+-------------------------------------------------------------------------------
+
+class HasConsts a where
+  consts :: a -> Set Const
+
+instance HasConsts Const where
+  consts = Set.singleton
+
+instance HasConsts a => HasConsts [a] where
+  consts = Foldable.foldMap consts
+
+instance HasConsts a => HasConsts (Set a) where
+  consts = Foldable.foldMap consts
+
+instance HasConsts TermData where
+  consts (ConstTerm c _) = consts c
+  consts (VarTerm _) = Set.empty
+  consts (AppTerm f x) = Set.union (consts f) (consts x)
+  consts (AbsTerm _ b) = consts b
+
+instance HasConsts Term where
+  consts (Term d _ _ _ _) = consts d
+
+-------------------------------------------------------------------------------
 -- Primitive constants
 -------------------------------------------------------------------------------
 
@@ -46,7 +72,7 @@ eq = mkUndef (mkGlobal "=")
 select :: Const
 select = mkUndef (mkGlobal "select")
 
--- The standard primitives
+-- All primitive constants
 
 primitives :: Set Const
 primitives = Set.fromList [eq,select]

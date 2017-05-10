@@ -69,3 +69,23 @@ variantAvoiding avoid n =
       where
         ni = Name ns bi
         bi = b ++ show i
+
+-------------------------------------------------------------------------------
+-- Parsing names
+-------------------------------------------------------------------------------
+
+parseName :: String -> Maybe Name
+parseName =
+    start
+  where
+    escapable = flip elem "\"\\."
+    inescapable = not . escapable
+
+    start ('"' : n) = go [] [] n
+    start _ = Nothing
+
+    go ns s ['"'] = Just $ Name (Namespace $ reverse ns) (reverse s)
+    go ns s ('.' : l) = go (reverse s : ns) [] l
+    go ns s ('\\' : c : l) | escapable c = go ns (c : s) l
+    go ns s (c : l) | inescapable c = go ns (c : s) l
+    go _ _ _ = Nothing
