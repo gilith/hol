@@ -14,6 +14,7 @@ where
 import Control.Monad (foldM,guard)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
 import HOL.Data
 import HOL.Name
 import HOL.Sequent (Sequent)
@@ -89,8 +90,8 @@ alphaHyp h th =
   where
     ha = TermAlpha.mk h
 
-alphaSeq :: Sequent -> Thm -> Maybe Thm
-alphaSeq sq th = do
+alphaSequent :: Sequent -> Thm -> Maybe Thm
+alphaSequent sq th = do
     th0 <- alpha (TermAlpha.dest c) th
     guard (Thm.hyp th == h)
     foldM (flip alphaHyp) th0 hl
