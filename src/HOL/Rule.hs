@@ -110,7 +110,7 @@ defineConstList nvs th = do
     (cs,vcs,defs,vm0) <- foldM delVar ([],[],[],vm) nvs
     guard (Map.null vm0)
     let sub = Subst.fromList [] vcs
-    def <- foldM proveHyp (Thm.subst sub th) defs
+    def <- foldM (flip proveHyp) (Thm.subst sub th) defs
     return (cs,def)
   where
     addVar vm h = do
@@ -124,3 +124,47 @@ defineConstList nvs th = do
       (c,def) <- Thm.defineConst n tm
       let vc = (v, Term.mkConst c (Var.typeOf v))
       return (c : cs, vc : vcs, def : defs, Map.delete v vm)
+
+-------------------------------------------------------------------------------
+-- The legacy (a.k.a. HOL Light) version of defineTypeOp
+-------------------------------------------------------------------------------
+
+defineTypeOpLegacy :: Name -> Name -> Name -> [TypeVar] -> Thm ->
+                      Maybe (TypeOp,Const,Const,Thm,Thm)
+defineTypeOpLegacy opName absName repName tyVarl existenceTh = do
+    (opT,absC,repC,absRepTh,repAbsTh) <-
+      Thm.defineTypeOp opName absName repName tyVarl existenceTh
+    let absRepTh' = unsafe convertAbsRep absRepTh
+    let repAbsTh' = unsafe convertRepAbs repAbsTh
+    return (opT,absC,repC,absRepTh',repAbsTh')
+  where
+    unsafe convert th =
+        case convert th of
+          Just th' -> th'
+          Nothing -> error "HOL.Rule.defineTypeOpLegacy failed"
+
+    convertAbsRep th0 = do  -- |- (\a. abs (rep a)) = (\a. a)
+        aId <- Term.rhs $ TermAlpha.dest $ Thm.concl th0  -- \a. a
+        (_,aTm) <- Term.destAbs aId  -- a
+        th1 <- rator th0 aTm  -- |- (\a. abs (rep a)) a = (\a. a) a
+        (tm0,rhsTm) <- Term.destApp $ TermAlpha.dest $ Thm.concl th1
+        (eqTm,lhsTm) <- Term.destApp tm0
+        th2 <- Thm.betaConv lhsTm  -- |- (\a. abs (rep a)) a = abs (rep a)
+        th3 <- rand eqTm th2
+        th4 <- Thm.betaConv rhsTm  -- |- (\a. a) a = a
+        th5 <- Thm.mkApp th3 th4
+        Thm.eqMp th5 th1  -- |- abs (rep a) = a
+
+    convertRepAbs th0 = do  -- (\r. rep (abs r) = r) = (\r. p r)
+        tm0 <- Term.lhs $ TermAlpha.dest $ Thm.concl th0
+        (_,tm1) <- Term.destAbs tm0  -- rep (abs r) = r
+        rTm <- Term.rhs tm1  -- r
+        th1 <- rator th0 rTm  -- |- (\r. rep (abs r) = r) r <=> (\r. p r) r
+        (tm2,rhsTm) <- Term.destApp $ TermAlpha.dest $ Thm.concl th1
+        (iffTm,lhsTm) <- Term.destApp tm2
+        th2 <- Thm.betaConv lhsTm
+        th3 <- rand iffTm th2
+        th4 <- Thm.betaConv rhsTm
+        th5 <- Thm.mkApp th3 th4
+        th6 <- Thm.eqMp th5 th1  -- |- rep (abs r) = r <=> p r
+        sym th6  -- |- p r <=> rep (abs r) = r

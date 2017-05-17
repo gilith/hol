@@ -1,1 +1,8 @@
+/.cabal-sandbox
+/cabal.sandbox.config
 /dist
+/hol-profile.aux
+/hol-profile.hp
+/hol-profile.pdf
+/hol-profile.prof
+/hol-profile.ps

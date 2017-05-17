@@ -23,7 +23,7 @@ import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as Text
 import qualified Data.Text.Lazy.Encoding as Text.Encoding
 import qualified HOL.Const as Const
-import Text.PrettyPrint ((<+>),($+$))
+import Text.PrettyPrint ((<>),(<+>),($+$))
 import qualified Text.PrettyPrint as PP
 
 import HOL.Data
@@ -562,6 +562,11 @@ executeCommand thy state cmd =
         let tv = map TypeVar.mk tvn
         (t,a,r,ar,ra) <- Thm.defineTypeOp tn an rn tv th
         return $ push5State ra ar r a t s
+      DefineTypeOpLegacyCommand -> do
+        (th,tvn,rn,an,tn,s) <- pop5State state
+        let tv = map TypeVar.mk tvn
+        (t,a,r,ar,ra) <- Rule.defineTypeOpLegacy tn an rn tv th
+        return $ push5State ra ar r a t s
       EqMpCommand -> do
         (th1,th0,s) <- pop2State state
         th <- Thm.eqMp th0 th1
@@ -652,7 +657,8 @@ instance Printable State where
         where
           ds = if x <= 1 then map toDoc s
                else map toDoc (take k s) ++ [dx]
-          dx = PP.int x <+> PP.text "more objects"
+          dx = dots <> PP.int x <+> PP.text "more objects" <> dots
+          dots = PP.text "..."
           x = length s - k
 
 -------------------------------------------------------------------------------

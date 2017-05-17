@@ -64,15 +64,137 @@ instance HasConsts Term where
 
 -- Equality
 
+eqName :: Name
+eqName = mkGlobal "="
+
 eq :: Const
-eq = mkUndef (mkGlobal "=")
+eq = mkUndef eqName
 
 -- Hilbert's indefinite choice operator
 
+selectName :: Name
+selectName = mkGlobal "select"
+
 select :: Const
-select = mkUndef (mkGlobal "select")
+select = mkUndef selectName
 
 -- All primitive constants
 
 primitives :: Set Const
 primitives = Set.fromList [eq,select]
+
+-------------------------------------------------------------------------------
+-- Standard constants
+-------------------------------------------------------------------------------
+
+-- Booleans
+
+boolNamespace :: Namespace
+boolNamespace = Namespace ["Data","Bool"]
+
+condName :: Name
+condName = Name boolNamespace "cond"
+
+conjName :: Name
+conjName = Name boolNamespace "/\\"
+
+disjName :: Name
+disjName = Name boolNamespace "\\/"
+
+existsName :: Name
+existsName = Name boolNamespace "?"
+
+existsUniqueName :: Name
+existsUniqueName = Name boolNamespace "?!"
+
+forallName :: Name
+forallName = Name boolNamespace "!"
+
+impName :: Name
+impName = Name boolNamespace "==>"
+
+negName :: Name
+negName = Name boolNamespace "~"
+
+-- Lists
+
+listNamespace :: Namespace
+listNamespace = Namespace ["Data","List"]
+
+appendName :: Name
+appendName = Name listNamespace "@"
+
+consName :: Name
+consName = Name listNamespace "::"
+
+-- Functions
+
+functionNamespace :: Namespace
+functionNamespace = Namespace ["Function"]
+
+composeName :: Name
+composeName = Name functionNamespace "o"
+
+-- Natural numbers
+
+naturalNamespace :: Namespace
+naturalNamespace = Namespace ["Number","Natural"]
+
+addName :: Name
+addName = Name naturalNamespace "+"
+
+bit0Name :: Name
+bit0Name = Name naturalNamespace "bit0"
+
+bit1Name :: Name
+bit1Name = Name naturalNamespace "bit1"
+
+divName :: Name
+divName = Name naturalNamespace "div"
+
+geName :: Name
+geName = Name naturalNamespace ">="
+
+gtName :: Name
+gtName = Name naturalNamespace ">"
+
+leName :: Name
+leName = Name naturalNamespace "<="
+
+ltName :: Name
+ltName = Name naturalNamespace "<"
+
+modName :: Name
+modName = Name naturalNamespace "mod"
+
+multName :: Name
+multName = Name naturalNamespace "*"
+
+powerName :: Name
+powerName = Name naturalNamespace "^"
+
+subName :: Name
+subName = Name naturalNamespace "-"
+
+zeroName :: Name
+zeroName = Name naturalNamespace "zero"
+
+-- Sets
+
+setNamespace :: Namespace
+setNamespace = Namespace ["Set"]
+
+differenceName :: Name
+differenceName = Name setNamespace "difference"
+
+inName :: Name
+inName = Name setNamespace "in"
+
+intersectName :: Name
+intersectName = Name setNamespace "intersect"
+
+subsetName :: Name
+subsetName = Name setNamespace "subset"
+
+unionName :: Name
+unionName = Name setNamespace "union"
