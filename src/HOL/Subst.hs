@@ -11,11 +11,13 @@ portability: portable
 module HOL.Subst
 where
 
+import Control.Monad (guard)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe,isNothing)
 import Data.Set (Set)
 import qualified Data.Set as Set
+
 import HOL.Data
 import qualified HOL.Term as Term
 import HOL.TypeSubst (TypeSubst)
@@ -32,23 +34,42 @@ data Subst = Subst TypeSubst (Map Var Term) (Map Term (Maybe Term))
 -- Constructors and destructors
 -------------------------------------------------------------------------------
 
-mk :: TypeSubst -> Map Var Term -> Subst
-mk ts m =
-    Subst ts (Map.filterWithKey norm m) Map.empty
+mk :: TypeSubst -> Map Var Term -> Maybe Subst
+mk ts m = do
+    guard (all (uncurry Term.sameTypeVar) $ Map.toList m)
+    return $ Subst ts (Map.filterWithKey norm m) Map.empty
   where
-    norm v tm = not $ Term.equalVar v tm
+    norm v tm = not $ Term.eqVar v tm
+
+mkUnsafe :: TypeSubst -> Map Var Term -> Subst
+mkUnsafe ts m =
+    case mk ts m of
+      Just s -> s
+      Nothing -> error "HOL.Subst.mk failed"
 
 dest :: Subst -> (TypeSubst, Map Var Term)
 dest (Subst ts m _) = (ts,m)
 
-fromList :: [(TypeVar,Type)] -> [(Var,Term)] -> Subst
+fromList :: [(TypeVar,Type)] -> [(Var,Term)] -> Maybe Subst
 fromList ts = mk (TypeSubst.fromList ts) . Map.fromList
 
-empty :: Subst
-empty = fromList [] []
+fromListUnsafe :: [(TypeVar,Type)] -> [(Var,Term)] -> Subst
+fromListUnsafe ts l =
+    case fromList ts l of
+      Just s -> s
+      Nothing -> error "HOL.Subst.fromList failed"
 
-singleton :: Var -> Term -> Subst
+empty :: Subst
+empty = Subst TypeSubst.empty Map.empty Map.empty
+
+singleton :: Var -> Term -> Maybe Subst
 singleton v tm = fromList [] [(v,tm)]
+
+singletonUnsafe :: Var -> Term -> Subst
+singletonUnsafe v tm =
+    case singleton v tm of
+      Just s -> s
+      Nothing -> error "HOL.Subst.singleton failed"
 
 null :: Subst -> Bool
 null (Subst ts m _) = TypeSubst.null ts && Map.null m
@@ -178,7 +199,7 @@ class CanSubst a where
   subst s x = fst $ sharingSubst x s
 
   typeSubst :: TypeSubst -> a -> Maybe a
-  typeSubst ts = subst $ mk ts Map.empty
+  typeSubst ts = subst $ mkUnsafe ts Map.empty
 
   --
   -- These substitution functions return their argument if unchanged

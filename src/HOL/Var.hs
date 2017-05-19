@@ -14,6 +14,7 @@ where
 import qualified Data.Foldable as Foldable
 import Data.Set (Set)
 import qualified Data.Set as Set
+
 import HOL.Name
 import HOL.Data
 
@@ -68,7 +69,7 @@ instance HasFree TermData where
       bf = free b
 
 instance HasFree Term where
-  free (Term _ _ _ _ vs) = vs
+  free (Term _ _ _ _ _ vs) = vs
 
 -------------------------------------------------------------------------------
 -- Fresh variables

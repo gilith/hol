@@ -56,7 +56,7 @@ instance HasConsts TermData where
   consts (AbsTerm _ b) = consts b
 
 instance HasConsts Term where
-  consts (Term d _ _ _ _) = consts d
+  consts (Term d _ _ _ _ _) = consts d
 
 -------------------------------------------------------------------------------
 -- Primitive constants

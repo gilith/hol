@@ -27,8 +27,8 @@ mk = TypeVar
 dest :: TypeVar -> Name
 dest (TypeVar n) = n
 
-equalName :: Name -> TypeVar -> Bool
-equalName n (TypeVar m) = m == n
+eqName :: Name -> TypeVar -> Bool
+eqName n (TypeVar m) = m == n
 
 -------------------------------------------------------------------------------
 -- Named type variables (used in standard axioms)
@@ -61,7 +61,7 @@ instance HasVars TypeData where
   vars (OpType _ tys) = vars tys
 
 instance HasVars Type where
-  vars (Type _ _ vs) = vs
+  vars (Type _ _ _ vs) = vs
 
 instance HasVars Var where
   vars (Var _ ty) = vars ty
@@ -73,4 +73,4 @@ instance HasVars TermData where
   vars (AbsTerm v b) = Set.union (vars v) (vars b)
 
 instance HasVars Term where
-  vars (Term _ _ _ vs _) = vs
+  vars (Term _ _ _ _ vs _) = vs

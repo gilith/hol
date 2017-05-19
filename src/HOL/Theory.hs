@@ -607,7 +607,8 @@ executeCommand thy state cmd =
       SubstCommand -> do
         (th,(nty,vtm),s) <- pop2State state
         let vty = map (\(n,ty) -> (TypeVar.mk n, ty)) nty
-        let th' = Thm.subst (Subst.fromList vty vtm) th
+        sub <- Subst.fromList vty vtm
+        let th' = Thm.subst sub th
         return $ pushState th' s
       SymCommand -> do
         (th,s) <- popState state

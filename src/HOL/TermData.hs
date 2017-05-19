@@ -53,8 +53,8 @@ destVar _ = Nothing
 isVar :: TermData -> Bool
 isVar = isJust . destVar
 
-equalVar :: Var -> TermData -> Bool
-equalVar v d =
+eqVar :: Var -> TermData -> Bool
+eqVar v d =
     case destVar d of
       Just w -> w == v
       Nothing -> False
@@ -66,8 +66,8 @@ mkApp f x = do
     ty <- Type.domain fty
     if xty == ty then Just $ AppTerm f x else Nothing
   where
-    Term _ _ fty _ _ = f
-    Term _ _ xty _ _ = x
+    Term _ _ _ fty _ _ = f
+    Term _ _ _ xty _ _ = x
 
 destApp :: TermData -> Maybe (Term,Term)
 destApp (AppTerm f x) = Just (f,x)
@@ -98,12 +98,12 @@ size (VarTerm _) = 1
 size (AppTerm f x) =
     fsz + xsz
   where
-    Term _ fsz _ _ _ = f
-    Term _ xsz _ _ _ = x
+    Term _ _ fsz _ _ _ = f
+    Term _ _ xsz _ _ _ = x
 size (AbsTerm _ b) =
     bsz + 1
   where
-    Term _ bsz _ _ _ = b
+    Term _ _ bsz _ _ _ = b
 
 -------------------------------------------------------------------------------
 -- The type of a (well-formed) term
@@ -117,8 +117,8 @@ typeOf (AppTerm f _) =
       Just ty -> ty
       Nothing -> error "HOL.TermData.typeOf: bad types in AppTerm"
   where
-    Term _ _ fty _ _ = f
+    Term _ _ _ fty _ _ = f
 typeOf (AbsTerm v b) =
     Type.mkFun (Var.typeOf v) bty
   where
-    Term _ _ bty _ _ = b
+    Term _ _ _ bty _ _ = b

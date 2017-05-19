@@ -33,7 +33,7 @@ mk :: Map TypeVar Type -> TypeSubst
 mk m =
     TypeSubst (Map.filterWithKey norm m) Map.empty
   where
-    norm v ty = not $ Type.equalVar v ty
+    norm v ty = not $ Type.eqVar v ty
 
 dest :: TypeSubst -> Map TypeVar Type
 dest (TypeSubst m _) = m

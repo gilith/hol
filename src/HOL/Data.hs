@@ -12,6 +12,8 @@ module HOL.Data
 where
 
 import Data.Set (Set)
+import System.Mem.StableName (StableName)
+
 import HOL.Name
 
 -------------------------------------------------------------------------------
@@ -49,23 +51,27 @@ data TypeOpDef =
 -- Types
 -------------------------------------------------------------------------------
 
-data Type =
-    Type TypeData Size (Set TypeVar)
-  deriving Show
+data Type = Type TypeData TypeId Size (Set TypeVar)
 
 data TypeData =
     VarType TypeVar
   | OpType TypeOp [Type]
   deriving (Eq,Ord,Show)
 
+type TypeId = StableName TypeData
+
 instance Eq Type where
-  (Type d1 s1 _) == (Type d2 s2 _) = s1 == s2 && d1 == d2
+  (Type d1 i1 s1 _) == (Type d2 i2 s2 _) =
+      s1 == s2 && (i1 == i2 || d1 == d2)
 
 instance Ord Type where
-  compare (Type d1 s1 _) (Type d2 s2 _) =
-    case compare s1 s2 of
-      EQ -> compare d1 d2
-      x -> x
+  compare (Type d1 i1 s1 _) (Type d2 i2 s2 _) =
+      case compare s1 s2 of
+        EQ -> if i1 == i2 then EQ else compare d1 d2
+        x -> x
+
+instance Show Type where
+  show (Type d _ _ _) = show d
 
 -------------------------------------------------------------------------------
 -- Variables
@@ -98,9 +104,7 @@ data ConstDef =
 -- Terms
 -------------------------------------------------------------------------------
 
-data Term =
-    Term TermData Size Type (Set TypeVar) (Set Var)
-  deriving Show
+data Term = Term TermData TermId Size Type (Set TypeVar) (Set Var)
 
 data TermData =
     ConstTerm Const Type
@@ -109,11 +113,17 @@ data TermData =
   | AbsTerm Var Term
   deriving (Eq,Ord,Show)
 
+type TermId = StableName TermData
+
 instance Eq Term where
-  (Term d1 s1 _ _ _) == (Term d2 s2 _ _ _) = s1 == s2 && d1 == d2
+  (Term d1 i1 s1 _ _ _) == (Term d2 i2 s2 _ _ _) =
+      s1 == s2 && (i1 == i2 || d1 == d2)
 
 instance Ord Term where
-  compare (Term d1 s1 _ _ _) (Term d2 s2 _ _ _) =
-    case compare s1 s2 of
-      EQ -> compare d1 d2
-      x -> x
+  compare (Term d1 i1 s1 _ _ _) (Term d2 i2 s2 _ _ _) =
+      case compare s1 s2 of
+        EQ -> if i1 == i2 then EQ else compare d1 d2
+        x -> x
+
+instance Show Term where
+  show (Term d _ _ _ _ _) = show d

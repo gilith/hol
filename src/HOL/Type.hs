@@ -12,6 +12,9 @@ module HOL.Type
 where
 
 import Data.Maybe (isJust)
+import System.IO.Unsafe (unsafePerformIO)
+import System.Mem.StableName (makeStableName)
+
 import HOL.Data
 import qualified HOL.TypeData as TypeData
 import qualified HOL.TypeOp as TypeOp
@@ -22,12 +25,13 @@ import qualified HOL.TypeVar as TypeVar
 -------------------------------------------------------------------------------
 
 dest :: Type -> TypeData
-dest (Type d _ _) = d
+dest (Type d _ _ _) = d
 
 mk :: TypeData -> Type
 mk d =
-    Type d sz vs
+    Type d i sz vs
   where
+    i = unsafePerformIO (makeStableName $! d)
     sz = TypeData.size d
     vs = TypeVar.vars d
 
@@ -42,8 +46,8 @@ destVar = TypeData.destVar . dest
 isVar :: Type -> Bool
 isVar = isJust . destVar
 
-equalVar :: TypeVar -> Type -> Bool
-equalVar v = TypeData.equalVar v . dest
+eqVar :: TypeVar -> Type -> Bool
+eqVar v = TypeData.eqVar v . dest
 
 -- Operators
 
@@ -67,7 +71,7 @@ isGivenOp t = isJust . destGivenOp t
 -------------------------------------------------------------------------------
 
 size :: Type -> Size
-size (Type _ s _) = s
+size (Type _ _ s _) = s
 
 -------------------------------------------------------------------------------
 -- Type syntax

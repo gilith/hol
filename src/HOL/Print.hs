@@ -158,20 +158,57 @@ instance Printable Type where
   toDoc =
       normal
     where
-      basic ty =
-          if Type.isFun ty then PP.parens $ normal ty
+      basic _ ty =
+          if isInfix ty then parens ty
           else case Type.dest ty of
                  VarType v -> toDoc v
                  OpType t [] -> toDoc t
-                 OpType t [x] -> basic x <+> toDoc t
+                 OpType t [x] -> basic False x <+> toDoc t
                  OpType t xs -> normals xs <+> toDoc t
 
-      normal ty =
-          case Type.destFun ty of
-            Just (d,r) -> basic d <+> PP.char '\8594' <+> normal r
-            Nothing -> basic ty
+      normal = ppInfixOps destInfix basic
 
       normals = PP.parens . PP.fsep . PP.punctuate (PP.text ",") . map normal
+
+      parens = PP.parens . normal
+
+      -------------------------------------------------------------------------
+      -- These grammar tables control type printing
+      -------------------------------------------------------------------------
+
+      infixTable =
+          [--
+           -- Primitives
+           (TypeOp.funName, 4, RightAssoc, Nothing)]
+
+      -------------------------------------------------------------------------
+      -- Infix operators
+      -------------------------------------------------------------------------
+
+      mkInfixOp (n,p,a,x) =
+          (n, (p, a, flip (<+>) $ PP.text s))
+        where
+          s = case x of
+                Just y -> y
+                Nothing -> let Name _ y = n in y
+
+      infixOps :: Map Name InfixOp
+      infixOps = Map.fromList $ map mkInfixOp infixTable
+
+      destBinary ty =
+          case Type.dest ty of
+            OpType t [x,y] -> Just (t,x,y)
+            _ -> Nothing
+
+      destInfix :: Type -> Maybe (InfixOp,Type,Type)
+      destInfix ty = do
+          (t,x,y) <- destBinary ty
+          i <- lookupOp (TypeOp.name t)
+          return (i,x,y)
+        where
+          lookupOp n = Map.lookup n infixOps
+
+      isInfix = isJust . destInfix
 
 -------------------------------------------------------------------------------
 -- Terms

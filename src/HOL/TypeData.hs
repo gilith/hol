@@ -11,8 +11,9 @@ portability: portable
 module HOL.TypeData
 where
 
-import Data.Maybe (isJust)
 import qualified Data.List as List
+import Data.Maybe (isJust)
+
 import HOL.Data
 
 -------------------------------------------------------------------------------
@@ -31,8 +32,8 @@ destVar _ = Nothing
 isVar :: TypeData -> Bool
 isVar = isJust . destVar
 
-equalVar :: TypeVar -> TypeData -> Bool
-equalVar v d =
+eqVar :: TypeVar -> TypeData -> Bool
+eqVar v d =
     case destVar d of
       Just w -> w == v
       Nothing -> False
@@ -67,7 +68,7 @@ size (VarType _) = 1
 size (OpType _ tys) =
     List.foldl' add 1 tys
   where
-    add n (Type _ s _) = n + s
+    add n (Type _ _ s _) = n + s
 
 -------------------------------------------------------------------------------
 -- Type syntax

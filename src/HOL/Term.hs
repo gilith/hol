@@ -13,6 +13,9 @@ where
 
 import Data.Maybe (isJust)
 import qualified Data.Map as Map
+import System.IO.Unsafe (unsafePerformIO)
+import System.Mem.StableName (makeStableName)
+
 import qualified HOL.Const as Const
 import HOL.Data
 import qualified HOL.TermData as TermData
@@ -25,12 +28,13 @@ import qualified HOL.Var as Var
 -------------------------------------------------------------------------------
 
 dest :: Term -> TermData
-dest (Term d _ _ _ _) = d
+dest (Term d _ _ _ _ _) = d
 
 mk :: TermData -> Term
 mk d =
-    Term d sz ty tvs fvs
+    Term d i sz ty tvs fvs
   where
+    i = unsafePerformIO (makeStableName $! d)
     sz = TermData.size d
     ty = TermData.typeOf d
     tvs = TypeVar.vars d
@@ -64,8 +68,8 @@ destVar = TermData.destVar . dest
 isVar :: Term -> Bool
 isVar = isJust . destVar
 
-equalVar :: Var -> Term -> Bool
-equalVar v = TermData.equalVar v . dest
+eqVar :: Var -> Term -> Bool
+eqVar v = TermData.eqVar v . dest
 
 -- Function application
 
@@ -142,17 +146,23 @@ stripAbs tm =
 -------------------------------------------------------------------------------
 
 size :: Term -> Size
-size (Term _ s _ _ _) = s
+size (Term _ _ s _ _ _) = s
 
 -------------------------------------------------------------------------------
 -- The type of a (well-formed) term
 -------------------------------------------------------------------------------
 
 typeOf :: Term -> Type
-typeOf (Term _ _ ty _ _) = ty
+typeOf (Term _ _ _ ty _ _) = ty
 
 isBool :: Term -> Bool
 isBool = Type.isBool . typeOf
+
+sameType :: Term -> Term -> Bool
+sameType tm1 tm2 = typeOf tm1 == typeOf tm2
+
+sameTypeVar :: Var -> Term -> Bool
+sameTypeVar v tm = Var.typeOf v == typeOf tm
 
 -------------------------------------------------------------------------------
 -- A total order on terms modulo alpha-equivalence
@@ -166,10 +176,13 @@ alphaCompare =
     bvEmpty = Map.empty
 
     tcmp n bvEq bv1 bv2 tm1 tm2 =
-        case compare (size tm1) (size tm2) of
-          LT -> LT
-          EQ -> dcmp n bvEq bv1 bv2 (dest tm1) (dest tm2)
-          GT -> GT
+        if bvEq && iEq tm1 tm2 then EQ
+        else case compare (size tm1) (size tm2) of
+               LT -> LT
+               EQ -> dcmp n bvEq bv1 bv2 (dest tm1) (dest tm2)
+               GT -> GT
+
+    iEq (Term _ i1 _ _ _ _) (Term _ i2 _ _ _ _) = i1 == i2
 
     dcmp _ _ bv1 bv2 (VarTerm v1) (VarTerm v2) =
         case (Map.lookup v1 bv1, Map.lookup v2 bv2) of

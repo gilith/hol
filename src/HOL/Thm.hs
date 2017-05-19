@@ -178,7 +178,7 @@ betaConv :: Term -> Maybe Thm
 betaConv tm = do
     (vt,u) <- Term.destApp tm
     (v,t) <- Term.destAbs vt
-    let tm' = Subst.trySubst (Subst.singleton v u) t
+    let tm' = Subst.trySubst (Subst.singletonUnsafe v u) t
     let sq = Sequent.mkNullHypUnsafe $ TermAlpha.mk $ Term.mkEqUnsafe tm tm'
     return $ Thm sq
 

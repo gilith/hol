@@ -54,7 +54,7 @@ instance HasOps TypeData where
   ops (OpType t tys) = Set.union (ops t) (ops tys)
 
 instance HasOps Type where
-  ops (Type d _ _) = ops d
+  ops (Type d _ _ _) = ops d
 
 instance HasOps Var where
   ops (Var _ ty) = ops ty
@@ -66,7 +66,7 @@ instance HasOps TermData where
   ops (AbsTerm v b) = Set.union (ops v) (ops b)
 
 instance HasOps Term where
-  ops (Term d _ _ _ _) = ops d
+  ops (Term d _ _ _ _ _) = ops d
 
 -------------------------------------------------------------------------------
 -- Primitive type operators
@@ -74,18 +74,27 @@ instance HasOps Term where
 
 -- Booleans
 
+boolName :: Name
+boolName = mkGlobal "bool"
+
 bool :: TypeOp
-bool = mkUndef (mkGlobal "bool")
+bool = mkUndef boolName
 
 -- Function spaces
 
+funName :: Name
+funName = mkGlobal "->"
+
 fun :: TypeOp
-fun = mkUndef (mkGlobal "->")
+fun = mkUndef funName
 
 -- Individuals
 
+indName :: Name
+indName = mkGlobal "ind"
+
 ind :: TypeOp
-ind = mkUndef (mkGlobal "ind")
+ind = mkUndef indName
 
 -- All primitive type operators
 

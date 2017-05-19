@@ -109,7 +109,7 @@ defineConstList nvs th = do
     guard (Set.isSubsetOf (Var.free (Thm.concl th)) (Map.keysSet vm))
     (cs,vcs,defs,vm0) <- foldM delVar ([],[],[],vm) nvs
     guard (Map.null vm0)
-    let sub = Subst.fromList [] vcs
+    let sub = Subst.fromListUnsafe [] vcs
     def <- foldM (flip proveHyp) (Thm.subst sub th) defs
     return (cs,def)
   where

@@ -16,6 +16,6 @@ import qualified HOL.Theory as Theory
 
 main :: IO ()
 main = do
-  do thy <- Theory.readArticle Theory.standard "bool.art"
+  do thy <- Theory.readArticle Theory.standard "base.art"
      putStrLn $ toString thy
      return ()
