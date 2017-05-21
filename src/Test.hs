@@ -11,11 +11,17 @@ module Main
   ( main )
 where
 
+import Data.Set (Set)
+
 import HOL.Print
 import qualified HOL.Theory as Theory
+import HOL.Thm (Thm)
+
+base :: IO (Set Thm)
+base = Theory.readArticle Theory.standard "base5.art"
 
 main :: IO ()
 main = do
-  do thy <- Theory.readArticle Theory.standard "base.art"
-     putStrLn $ toString thy
-     return ()
+    ths <- base
+    putStrLn $ toString ths
+    return ()

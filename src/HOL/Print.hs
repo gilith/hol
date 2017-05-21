@@ -38,6 +38,33 @@ import qualified HOL.TypeVar as TypeVar
 import qualified HOL.Var as Var
 
 -------------------------------------------------------------------------------
+-- Printing symbol names
+-------------------------------------------------------------------------------
+
+isSymbolChar :: Char -> Bool
+isSymbolChar = not . Char.isAlphaNum
+
+isSymbolString :: String -> Bool
+isSymbolString [] = True
+isSymbolString ['o'] = True
+isSymbolString ['(',')'] = False
+isSymbolString ['[',']'] = False
+isSymbolString ['{','}'] = False
+isSymbolString (c : _) = isSymbolChar c
+
+ppSymbolName :: Name -> PP.Doc
+ppSymbolName =
+    parenSymbol . showName
+  where
+    showName (Name ns s) = Name (showNamespace ns) s
+    showNamespace (Namespace ns) = Namespace (List.dropWhile isUpper ns)
+    isUpper [] = False
+    isUpper (c : _) = Char.isUpper c
+
+    parenSymbol n = (if isSymbol n then PP.parens else id) $ toDoc n
+    isSymbol (Name (Namespace ns) s) = isSymbolString (concat ns ++ s)
+
+-------------------------------------------------------------------------------
 -- Printing prefix operators
 -------------------------------------------------------------------------------
 
@@ -116,7 +143,7 @@ class Printable a where
   toString =
       PP.renderStyle style . toDoc
     where
-      style = PP.style {PP.lineLength = 80}
+      style = PP.style {PP.lineLength = 80, PP.ribbonsPerLine = 1.0}
 
 instance Printable Integer where
   toDoc = PP.integer
@@ -125,7 +152,7 @@ instance Printable a => Printable [a] where
   toDoc = PP.brackets . PP.fsep . PP.punctuate PP.comma . map toDoc
 
 instance Printable a => Printable (Set a) where
-  toDoc = PP.braces . PP.sep . PP.punctuate PP.comma . map toDoc . Set.toList
+  toDoc = PP.braces . PP.sep . PP.punctuate PP.comma . map toDoc . Set.toAscList
 
 -------------------------------------------------------------------------------
 -- Names
@@ -152,7 +179,7 @@ instance Printable TypeVar where
   toDoc = toDoc . TypeVar.dest
 
 instance Printable TypeOp where
-  toDoc = toDoc . TypeOp.name
+  toDoc = ppSymbolName . TypeOp.name
 
 instance Printable Type where
   toDoc =
@@ -168,7 +195,7 @@ instance Printable Type where
 
       normal = ppInfixOps destInfix basic
 
-      normals = PP.parens . PP.fsep . PP.punctuate (PP.text ",") . map normal
+      normals = PP.parens . PP.fsep . PP.punctuate PP.comma . map normal
 
       parens = PP.parens . normal
 
@@ -179,10 +206,16 @@ instance Printable Type where
       infixTable =
           [--
            -- Primitives
-           (TypeOp.funName, 4, RightAssoc, Nothing)]
+           (TypeOp.funName, 1, RightAssoc, Nothing),
+           --
+           -- Pairs
+           (TypeOp.productName, 3, RightAssoc, Nothing),
+           --
+           -- Sums
+           (TypeOp.sumName, 2, RightAssoc, Nothing)]
 
       -------------------------------------------------------------------------
-      -- Infix operators
+      -- Infix type operators
       -------------------------------------------------------------------------
 
       mkInfixOp (n,p,a,x) =
@@ -215,18 +248,7 @@ instance Printable Type where
 -------------------------------------------------------------------------------
 
 instance Printable Const where
-  toDoc =
-      parenSymbol . showName . Const.name
-    where
-      showName (Name ns s) = Name (showNamespace ns) s
-      showNamespace (Namespace ns) = Namespace (List.dropWhile isUpper ns)
-      isUpper [] = False
-      isUpper (c : _) = Char.isUpper c
-
-      parenSymbol n = (if symbolName n then PP.parens else id) $ toDoc n
-      symbolName (Name (Namespace ns) s) = isSymbol (concat ns ++ s)
-      isSymbol [] = False
-      isSymbol (c : _) = not (Char.isAlphaNum c)
+  toDoc = ppSymbolName . Const.name
 
 instance Printable Var where
   toDoc = toDoc . Var.name
@@ -235,14 +257,27 @@ instance Printable Term where
   toDoc =
       normal
     where
+      atom tm =
+          case Term.dest tm of
+            VarTerm v -> toDoc v
+            ConstTerm c _ -> toDoc c
+            _ -> parens tm
+
+      comprehension tm =
+          case destComprehension tm of
+            Just (v,pat,prd) ->
+                ppComprehension (map toDoc v) (normal pat) (normal prd)
+            Nothing -> atom tm
+
+      pair tm =
+          case stripPair tm of
+            ([],_) -> comprehension tm
+            (xs,y) -> ppPair (map (negation False) xs ++ [negation True y])
+
       basic tm =
           case destNumeral tm of
             Just i -> PP.integer i
-            Nothing ->
-              case Term.dest tm of
-                VarTerm v -> toDoc v
-                ConstTerm c _ -> toDoc c
-                _ -> parens tm
+            Nothing -> pair tm
 
       application tm =
           case stripGenApp tm of
@@ -281,6 +316,7 @@ instance Printable Term where
       -- These grammar tables control term printing
       -------------------------------------------------------------------------
 
+      infixTable :: [(Name, Prec, Assoc, Maybe String)]
       infixTable =
           [--
            -- Booleans
@@ -290,6 +326,7 @@ instance Printable Term where
            --
            -- Functions
            (Const.composeName, 4, LeftAssoc, Nothing),
+           (Const.funpowName, 9, RightAssoc, Nothing),
            --
            -- Natural numbers
            (Const.powerName, 9, RightAssoc, Nothing),
@@ -305,34 +342,79 @@ instance Printable Term where
            --
            -- Set theory
            (Const.intersectName, 7, LeftAssoc, Nothing),
-           (Const.differenceName, 6, LeftAssoc, Nothing),
+           (Const.differenceName, 6, LeftAssoc, Just "-"),
            (Const.unionName, 6, LeftAssoc, Nothing),
-           (Const.inName, 3, NonAssoc, Nothing),
+           (Const.insertName, 6, LeftAssoc, Nothing),
+           (Const.deleteName, 6, LeftAssoc, Nothing),
+           (Const.memberName, 3, NonAssoc, Just "in"),
            (Const.subsetName, 3, NonAssoc, Nothing),
+           (Const.properSubsetName, 3, NonAssoc, Nothing),
            --
            --  List theory
            (Const.appendName, 5, RightAssoc, Nothing),
-           (Const.consName, 5, RightAssoc, Nothing)]
+           (Const.consName, 5, RightAssoc, Nothing),
+           --
+           -- Real numbers
+           (Const.powerRealName, 9, RightAssoc, Nothing),
+           (Const.multRealName, 8, LeftAssoc, Nothing),
+           (Const.divRealName, 8, LeftAssoc, Nothing),
+           (Const.addRealName, 6, LeftAssoc, Nothing),
+           (Const.subRealName, 6, LeftAssoc, Nothing),
+           (Const.leRealName, 3, NonAssoc, Nothing),
+           (Const.ltRealName, 3, NonAssoc, Nothing),
+           (Const.geRealName, 3, NonAssoc, Nothing),
+           (Const.gtRealName, 3, NonAssoc, Nothing)]
 
+      quantifierTable :: [(Name, Maybe String)]
       quantifierTable =
           [(Const.selectName, Nothing),
            (Const.forallName, Nothing),
            (Const.existsName, Nothing),
            (Const.existsUniqueName, Nothing)]
 
+      negationTable :: [(Name, Maybe String)]
       negationTable =
           [(Const.negName, Nothing)]
+
+      -------------------------------------------------------------------------
+      -- Operators of a given arity
+      -------------------------------------------------------------------------
+
+      destUnaryOp :: Term -> Maybe (Const,Term)
+      destUnaryOp tm = do
+          (t,x) <- Term.destApp tm
+          (c,_) <- Term.destConst t
+          return (c,x)
+
+      destBinaryOp :: Term -> Maybe (Const,Term,Term)
+      destBinaryOp tm = do
+          (t,y) <- Term.destApp tm
+          (c,x) <- destUnaryOp t
+          return (c,x,y)
+
+      destTernaryOp :: Term -> Maybe (Const,Term,Term,Term)
+      destTernaryOp tm = do
+          (t,z) <- Term.destApp tm
+          (c,x,y) <- destBinaryOp t
+          return (c,x,y,z)
 
       -------------------------------------------------------------------------
       -- Infix operators
       -------------------------------------------------------------------------
 
+      nameOp :: Name -> Maybe String -> String
+      nameOp n x =
+          case x of
+            Just y -> y
+            Nothing -> let Name _ y = n in y
+
+      mkInfixOp :: (Name, Prec, Assoc, Maybe String) -> (Name,InfixOp)
       mkInfixOp (n,p,a,x) =
-          (n, (p, a, flip (<+>) $ PP.text s))
+          (n, (p, a, flip (<+>) d))
         where
-          s = case x of
-                Just y -> y
-                Nothing -> let Name _ y = n in y
+          s = nameOp n x
+          t = PP.text s
+          d = if isSymbolString s then t else PP.char '`' <> t <> PP.char '`'
 
       eqInfixOp :: InfixOp
       eqInfixOp = snd $ mkInfixOp (Const.eqName, 3, NonAssoc, Nothing)
@@ -345,48 +427,68 @@ instance Printable Term where
 
       destInfix :: Term -> Maybe (InfixOp,Term,Term)
       destInfix tm = do
-          (cx,y) <- Term.destApp tm
-          (c,x) <- Term.destApp cx
-          n <- fmap (Const.name . fst) $ Term.destConst c
-          i <- lookupOp n
+          (c,x,y) <- destBinaryOp tm
+          i <- lookupOp (Term.typeOf x) (Const.name c)
           return (i,x,y)
         where
-          lookupOp n =
+          lookupOp ty n =
               if n /= Const.eqName then Map.lookup n infixOps
-              else if Term.isBool tm then Just iffInfixOp
+              else if Type.isBool ty then Just iffInfixOp
               else Just eqInfixOp
 
+      isInfix :: Term -> Bool
       isInfix = isJust . destInfix
 
       -------------------------------------------------------------------------
       -- Prefix operators
       -------------------------------------------------------------------------
 
+      mkPrefixOp :: (Name, Maybe String) -> (Name,PrefixOp)
       mkPrefixOp (n,x) =
-          (n, join $ PP.text s)
+          (n, attach $ PP.text s)
         where
-          s = case x of
-                Just y -> y
-                Nothing -> let Name _ y = n in y
-
-          join = case reverse s of
-                   c : _ | Char.isAlphaNum c -> (<+>)
-                   _ -> (<>)
+          s = nameOp n x
+          attach = case reverse s of
+                     c : _ | isSymbolChar c -> (<>)
+                     _ -> (<+>)
 
       -------------------------------------------------------------------------
-      -- Lambda abstractions
+      -- Generalized lambda abstractions
       -------------------------------------------------------------------------
+
+      destForall :: Term -> Maybe (Var,Term)
+      destForall tm = do
+          (c,t) <- destUnaryOp tm
+          (v,b) <- Term.destAbs t
+          guard (Const.name c == Const.forallName)
+          return (v,b)
+
+      stripForall :: Term -> ([Var],Term)
+      stripForall tm =
+          case destForall tm of
+            Just (v,t) -> (v : vs, b) where (vs,b) = stripForall t
+            Nothing -> ([],tm)
 
       destAbs :: Term -> Maybe (Term,Term)
-      destAbs tm = do
-          (v,b) <- Term.destAbs tm
-          return (Term.mkVar v, b)
+      destAbs tm =
+          case Term.destAbs tm of
+            Just (v,t) -> Just (Term.mkVar v, t)
+            Nothing -> do
+              (f,t0) <- Term.destSelect tm
+              let (vl,t1) = stripForall t0
+              guard (Var.notFreeIn f vl)
+              (t2,body) <- Term.destEq t1
+              (f',pat) <- Term.destApp t2
+              guard (Term.eqVar f f')
+              guard (Set.toAscList (Var.free pat) == vl)
+              guard (Var.notFreeIn f body)
+              return (pat,body)
 
       lambda :: PrefixOp
       lambda = snd $ mkPrefixOp (undefined, Just "\\")
 
-      destLambda :: Term -> Maybe (PrefixOp,[Term],Term)
-      destLambda tm = do
+      stripLambda :: Term -> Maybe (PrefixOp,[Term],Term)
+      stripLambda tm = do
           (v,t) <- destAbs tm
           let (vs,b) = strip t
           return (lambda, v : vs, b)
@@ -403,21 +505,21 @@ instance Printable Term where
       quantifiers :: Map Name PrefixOp
       quantifiers = Map.fromList $ map mkPrefixOp quantifierTable
 
-      destQuantifier :: Term -> Maybe (PrefixOp,[Term],Term)
+      destQuantifier :: Term -> Maybe (Const,Term,Term)
       destQuantifier tm = do
-          (c,v,t) <- dest tm
+          (c,vb) <- destUnaryOp tm
+          (v,b) <- destAbs vb
+          return (c,v,b)
+
+      stripQuantifier :: Term -> Maybe (PrefixOp,[Term],Term)
+      stripQuantifier tm = do
+          (c,v,t) <- destQuantifier tm
           q <- Map.lookup (Const.name c) quantifiers
           let (vs,b) = strip c t
           return (q, v : vs, b)
         where
-          dest t = do
-              (q,vb) <- Term.destApp t
-              (c,_) <- Term.destConst q
-              (v,b) <- destAbs vb
-              return (c,v,b)
-
           strip c t =
-              case dest t of
+              case destQuantifier t of
                 Just (c',v,u) | c' == c -> (v : vs, b) where (vs,b) = strip c u
                 _ -> ([],t)
 
@@ -427,14 +529,21 @@ instance Printable Term where
 
       destBinder :: Term -> Maybe (PrefixOp,[Term],Term)
       destBinder tm =
-          case destQuantifier tm of
+          case stripLambda tm of
             Just b -> Just b
-            Nothing -> destLambda tm
+            Nothing -> stripQuantifier tm
 
+      isBinder :: Term -> Bool
       isBinder = isJust . destBinder
 
+      ppBoundVars :: [PP.Doc] -> PP.Doc
+      ppBoundVars =
+          \v -> PP.fsep v <> dot
+        where
+          dot = PP.char '.'
+
       ppBinder :: PrefixOp -> [PP.Doc] -> PP.Doc -> PP.Doc
-      ppBinder b v t = b $ PP.sep [PP.fsep v <> PP.text ".", t]
+      ppBinder b v t = b $ PP.sep [ppBoundVars v, t]
 
       -------------------------------------------------------------------------
       -- Negation operators
@@ -445,11 +554,11 @@ instance Printable Term where
 
       destNegation :: Term -> Maybe (PrefixOp,Term)
       destNegation tm = do
-          (c,t) <- Term.destApp tm
-          n <- fmap (Const.name . fst) $ Term.destConst c
-          p <- Map.lookup n negations
+          (c,t) <- destUnaryOp tm
+          p <- Map.lookup (Const.name c) negations
           return (p,t)
 
+      isNegation :: Term -> Bool
       isNegation = isJust . destNegation
 
       stripNegation :: Term -> ([PrefixOp],Term)
@@ -464,13 +573,11 @@ instance Printable Term where
 
       destCond :: Term -> Maybe (Term,Term,Term)
       destCond tm = do
-          (ict,e) <- Term.destApp tm
-          (ic,t) <- Term.destApp ict
-          (i,c) <- Term.destApp ic
-          (x,_) <- Term.destConst i
-          guard (Const.name x == Const.condName)
-          return (c,t,e)
+          (c,x,y,z) <- destTernaryOp tm
+          guard (Const.name c == Const.condName)
+          return (x,y,z)
 
+      isCond :: Term -> Bool
       isCond = isJust . destCond
 
       stripCond :: Term -> ([(Term,Term)],Term)
@@ -504,6 +611,7 @@ instance Printable Term where
           (v,t) <- destAbs vt
           return (v,e,t)
 
+      isLet :: Term -> Bool
       isLet = isJust . destLet
 
       stripLet :: Term -> ([(Term,Term)],Term)
@@ -526,6 +634,22 @@ instance Printable Term where
       -- Numerals
       -------------------------------------------------------------------------
 
+      fromNaturals :: Set Name
+      fromNaturals = Set.fromList
+          [Const.fromNaturalRealName]
+
+      destFromNatural :: Term -> Maybe Term
+      destFromNatural tm = do
+          (c,t) <- destUnaryOp tm
+          guard (Set.member (Const.name c) fromNaturals)
+          return t
+
+      destMaybeFromNatural :: Term -> Term
+      destMaybeFromNatural tm =
+          case destFromNatural tm of
+            Just t -> t
+            Nothing -> tm
+
       isZero :: Term -> Bool
       isZero tm =
           case Term.destConst tm of
@@ -534,16 +658,15 @@ instance Printable Term where
 
       destBit :: Term -> Maybe (Bool,Term)
       destBit tm = do
-          (b,t) <- Term.destApp tm
-          (c,_) <- Term.destConst b
+          (c,t) <- destUnaryOp tm
           fmap (flip (,) t) $ bit (Const.name c)
         where
           bit n = if n == Const.bit0Name then Just False
                   else if n == Const.bit1Name then Just True
                   else Nothing
 
-      destNumeral :: Term -> Maybe Integer
-      destNumeral tm =
+      destBits :: Term -> Maybe Integer
+      destBits tm =
           if isZero tm then Just 0
           else do
             (b,t) <- destBit tm
@@ -553,7 +676,89 @@ instance Printable Term where
           bit False 0 = Nothing
           bit b i = Just (2 * i + (if b then 1 else 0))
 
+      destNumeral :: Term -> Maybe Integer
+      destNumeral = destBits . destMaybeFromNatural
+
+      isNumeral :: Term -> Bool
       isNumeral = isJust . destNumeral
+
+      -------------------------------------------------------------------------
+      -- Pairs
+      -------------------------------------------------------------------------
+
+      destPair :: Term -> Maybe (Term,Term)
+      destPair tm = do
+          (c,x,y) <- destBinaryOp tm
+          guard (Const.name c == Const.pairName)
+          return (x,y)
+
+      isPair :: Term -> Bool
+      isPair = isJust . destPair
+
+      stripPair :: Term -> ([Term],Term)
+      stripPair tm =
+          case destPair tm of
+            Just (x,t) -> (x : xs, y) where (xs,y) = stripPair t
+            Nothing -> ([],tm)
+
+      ppPair :: [PP.Doc] -> PP.Doc
+      ppPair = PP.parens . PP.fsep . PP.punctuate PP.comma
+
+      -------------------------------------------------------------------------
+      -- Set comprehensions
+      -------------------------------------------------------------------------
+
+      destFromPredicate :: Term -> Maybe Term
+      destFromPredicate tm = do
+          (c,t) <- destUnaryOp tm
+          guard (Const.name c == Const.fromPredicateName)
+          return t
+
+      destConj :: Term -> Maybe (Term,Term)
+      destConj tm = do
+          (c,x,y) <- destBinaryOp tm
+          guard (Const.name c == Const.conjName)
+          return (x,y)
+
+      destExists :: Term -> Maybe (Var,Term)
+      destExists tm = do
+          (c,t) <- destUnaryOp tm
+          (v,b) <- Term.destAbs t
+          guard (Const.name c == Const.existsName)
+          return (v,b)
+
+      stripExists :: Term -> ([Var],Term)
+      stripExists tm =
+          case destExists tm of
+            Just (v,t) -> (v : vs, b) where (vs,b) = stripExists t
+            Nothing -> ([],tm)
+
+      destComprehension :: Term -> Maybe ([Var],Term,Term)
+      destComprehension tm = do
+          t0 <- destFromPredicate tm
+          (v,t1) <- Term.destAbs t0
+          let (vl,t2) = stripExists t1
+          guard (not (null vl))
+          let vs = Set.fromList vl
+          guard (length vl == Set.size vs)
+          guard (Set.notMember v vs)
+          (t3,prd) <- destConj t2
+          (v',pat) <- Term.destEq t3
+          guard (Term.eqVar v v')
+          let fvs = Var.free pat
+          guard (Set.notMember v fvs)
+          guard (Var.notFreeIn v prd)
+          guard (Set.isSubsetOf vs fvs)
+          return (vl,pat,prd)
+
+      isComprehension :: Term -> Bool
+      isComprehension = isJust . destComprehension
+
+      ppComprehension :: [PP.Doc] -> PP.Doc -> PP.Doc -> PP.Doc
+      ppComprehension v pat prd =
+          PP.lbrace <+>
+          PP.sep [PP.sep [ppBoundVars v, pat <+> PP.text "|"], prd] <+>
+          PP.rbrace
 
       -------------------------------------------------------------------------
       -- Function application
@@ -563,9 +768,9 @@ instance Printable Term where
       destGenApp tm = do
           guard (not $ isNumeral tm)
           guard (not $ isCond tm)
-          --guard (not $ isPair tm)
+          guard (not $ isPair tm)
           guard (not $ isLet tm)
-          --guard (not $ isComprehension tm)
+          guard (not $ isComprehension tm)
           guard (not $ isInfix tm)
           guard (not $ isNegation tm)
           guard (not $ isBinder tm)

@@ -71,7 +71,7 @@ instance Ord Type where
         x -> x
 
 instance Show Type where
-  show (Type d _ _ _) = show d
+  show (Type _ _ s _) = show $ "Type<" ++ show s ++ ">"
 
 -------------------------------------------------------------------------------
 -- Variables
@@ -126,4 +126,4 @@ instance Ord Term where
         x -> x
 
 instance Show Term where
-  show (Term d _ _ _ _ _) = show d
+  show (Term _ _ s _ _ _) = show $ "Term<" ++ show s ++ ">"

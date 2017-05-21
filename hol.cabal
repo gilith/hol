@@ -17,7 +17,8 @@ Library
     bytestring >= 0.9 && < 0.10,
     containers >= 0.5 && < 0.6,
     pretty >= 1.1 && < 1.2,
-    text >= 0.11 && < 0.12
+    text >= 0.11 && < 0.12,
+    transformers >= 0.3 && < 0.4
   hs-source-dirs: src
   ghc-options: -Wall
   ghc-prof-options: -fprof-auto-top
@@ -48,28 +49,32 @@ test-suite hol-test
     bytestring >= 0.9 && < 0.10,
     containers >= 0.5 && < 0.6,
     pretty >= 1.1 && < 1.2,
-    text >= 0.11 && < 0.12
+    text >= 0.11 && < 0.12,
+    transformers >= 0.3 && < 0.4
   hs-source-dirs: src
   ghc-options: -Wall
   main-is: Test.hs
 
 -- Profiling steps:
--- * apt-get install ghc-prof libghc-text-prof
--- * cabal sandbox init
--- * cabal install --only-dependencies --enable-library-profiling
--- * cabal install --enable-library-profiling --enable-executable-profiling .
--- * cabal run hol-profile
--- * hp2ps -e8in -c hol-profile.hp
--- * ps2pdf hol-profile.ps
--- * less hol-profile.prof
--- * open hol-profile.pdf
-executable hol-profile
+-- > apt-get install ghc-prof libghc-text-prof libghc-transformers-prof
+-- > cabal sandbox init
+-- > cabal install --only-dependencies --enable-library-profiling
+-- > cabal install --enable-library-profiling --enable-executable-profiling .
+-- > opentheory info --article -o base.art base
+-- > cabal bench hol-profile
+-- > less hol-profile.prof
+-- > hp2ps -e8in -c hol-profile.hp
+-- > ps2pdf hol-profile.ps
+-- > open hol-profile.pdf
+benchmark hol-profile
+  type: exitcode-stdio-1.0
   build-depends:
     base >= 4.0 && < 5.0,
     bytestring >= 0.9 && < 0.10,
     containers >= 0.5 && < 0.6,
     pretty >= 1.1 && < 1.2,
-    text >= 0.11 && < 0.12
+    text >= 0.11 && < 0.12,
+    transformers >= 0.3 && < 0.4
   hs-source-dirs: src
   ghc-options:
     -fprof-auto-top

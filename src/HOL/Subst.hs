@@ -12,6 +12,7 @@ module HOL.Subst
 where
 
 import Control.Monad (guard)
+import Control.Monad.Trans.State (State,get,put,evalState)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe,isNothing)
@@ -80,50 +81,75 @@ null (Subst ts m _) = TypeSubst.null ts && Map.null m
 
 capturableVars :: Var -> Term -> Term -> Set Var
 capturableVars v =
-    termVars
+    \tm tm' -> evalState (termVars tm tm') Set.empty
   where
-    termVars :: Term -> Term -> Set Var
-    termVars tm tm' =
-        if Var.notFreeIn v tm then Var.free tm'
-        else dataVars (Term.dest tm) (Term.dest tm')
+    noVars :: Set Var
+    noVars = Set.empty
 
-    dataVars :: TermData -> TermData -> Set Var
-    dataVars (VarTerm _) _ = Set.empty  -- must be variable v
-    dataVars (AppTerm f x) (AppTerm f' x') =
-        Set.union (termVars f f') (termVars x x')
-    dataVars (AbsTerm _ b) (AbsTerm v' b') =  -- cannot be variable v
-        Set.insert v' (termVars b b')
+    termVars :: Term -> Term -> State (Set (Term,Term)) (Set Var)
+    termVars tm tm' =
+        if Var.notFreeIn v tm then return $ Var.free tm'
+        else cachedIdem subVars noVars (tm,tm')
+
+    subVars :: (Term,Term) -> State (Set (Term,Term)) (Set Var)
+    subVars (tm,tm') = dataVars (Term.dest tm) (Term.dest tm')
+
+    dataVars :: TermData -> TermData -> State (Set (Term,Term)) (Set Var)
+    dataVars (VarTerm _) _ = return noVars  -- must be variable v
+    dataVars (AppTerm f x) (AppTerm f' x') = do
+        fv <- termVars f f'
+        xv <- termVars x x'
+        return $ Set.union fv xv
+    dataVars (AbsTerm _ b) (AbsTerm v' b') = do  -- cannot be variable v
+        bv <- termVars b b'
+        return $ Set.insert v' bv
     dataVars _ _ = error "HOL.Subst.capturableVars.dataVars"
+
+    cachedIdem :: Ord a => (a -> State (Set a) b) -> b ->
+                  a -> State (Set a) b
+    cachedIdem f i a = do
+      s <- get
+      case Set.member a s of
+        True -> return i
+        False -> do
+          b <- f a
+          s' <- get
+          put (Set.insert a s')
+          return b
 
 renameBoundVar :: Var -> Term -> Term -> Term -> Term
 renameBoundVar v v' =
-    \tm tm' -> fst $ termRename tm tm' Map.empty
+    \tm tm' -> evalState (termRename tm tm') Map.empty
   where
-    termRename :: Term -> Term -> Map (Term,Term) Term ->
-                  (Term, Map (Term,Term) Term)
-    termRename tm tm' cache =
-        case Map.lookup (tm,tm') cache of
-          Just cached -> (cached,cache)
-          Nothing -> (tm'', Map.insert (tm,tm') tm'' cache')
-      where
-        (tm'',cache') =
-          if Var.notFreeIn v tm then (tm',cache)
-          else dataRename (Term.dest tm) (Term.dest tm') cache
+    termRename :: Term -> Term -> State (Map (Term,Term) Term) Term
+    termRename tm tm' =
+        if Var.notFreeIn v tm then return tm'
+        else cached subRename (tm,tm')
 
-    dataRename :: TermData -> TermData -> Map (Term,Term) Term ->
-                  (Term, Map (Term,Term) Term)
-    dataRename (VarTerm _) _ cache =  -- must be variable v
-        (v',cache)
-    dataRename (AppTerm f x) (AppTerm f' x') cache =
-        (Term.mkAppUnsafe f'' x'', cache'')
-      where
-        (f'',cache') = termRename f f' cache
-        (x'',cache'') = termRename x x' cache'
-    dataRename (AbsTerm _ b) (AbsTerm w' b') cache =  -- cannot be variable v
-        (Term.mkAbs w' b'', cache')
-      where
-        (b'',cache') = termRename b b' cache
-    dataRename _ _ _ = error "HOL.Subst.renameBoundVar.dataRename"
+    subRename :: (Term,Term) -> State (Map (Term,Term) Term) Term
+    subRename (tm,tm') = dataRename (Term.dest tm) (Term.dest tm')
+
+    dataRename :: TermData -> TermData -> State (Map (Term,Term) Term) Term
+    dataRename (VarTerm _) _ = return v' -- must be variable v
+    dataRename (AppTerm f x) (AppTerm f' x') = do
+        f'' <- termRename f f'
+        x'' <- termRename x x'
+        return $ Term.mkAppUnsafe f'' x''
+    dataRename (AbsTerm _ b) (AbsTerm w' b') = do  -- cannot be variable v
+        b'' <- termRename b b'
+        return $ Term.mkAbs w' b''
+    dataRename _ _ = error "HOL.Subst.renameBoundVar.dataRename"
+
+    cached :: Ord a => (a -> State (Map a b) b) -> a -> State (Map a b) b
+    cached f a = do
+      c <- get
+      case Map.lookup a c of
+        Just b -> return b
+        Nothing -> do
+          b <- f a
+          c' <- get
+          put (Map.insert a b c')
+          return b
 
 avoidCapture :: Bool -> Var -> Var -> Term -> Term -> (Var,Term)
 avoidCapture vSub' v v' b b' =

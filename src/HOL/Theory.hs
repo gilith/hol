@@ -372,16 +372,16 @@ regularCommands =
      (VarTypeCommand,"varType"),
      (VersionCommand,"version")]
 
-parseCommand :: String -> Maybe Command
+parseCommand :: Text -> Maybe Command
 parseCommand =
     regular
   where
-    m = Map.fromList $ map (\(c,s) -> (s,c)) regularCommands
+    regulars = Map.fromList $ map (\(c,s) -> (Text.pack s, c)) regularCommands
 
-    regular s =
-       case Map.lookup s m of
+    regular t =
+       case Map.lookup t regulars of
          Just c -> Just c
-         Nothing -> special s
+         Nothing -> special $ Text.unpack t
 
     special s =
        case parseName s of
@@ -392,12 +392,12 @@ instance Printable Command where
   toDoc =
       go
     where
-      m = Map.fromList $ map (\(c,s) -> (c, PP.text s)) regularCommands
+      regulars = Map.fromList $ map (\(c,s) -> (c, PP.text s)) regularCommands
 
       go (NumCommand i) = PP.integer i
       go (NameCommand n) = toDoc n
       go DefineTypeOpLegacyCommand = legacy DefineTypeOpCommand
-      go c = case Map.lookup c m of
+      go c = case Map.lookup c regulars of
                Just d -> d
                Nothing -> error $ "Unprintable command: " ++ show c
 
@@ -672,22 +672,19 @@ readArticle :: Theory -> FilePath -> IO (Set Thm)
 readArticle thy art = do
     bs <- ByteString.readFile art
     let txt = Text.Encoding.decodeUtf8 bs
-    let ls = zipWith mkLine [1..] $ Text.lines txt
+    let ls = zip [1..] $ Text.lines txt
     let (v,cs) = getVersion $ map parse $ filter notComment ls
     let s = List.foldl' execute initialState $ map (version v) cs
     return $ theorems s
   where
-    mkLine :: LineNumber -> Text -> (Integer,String)
-    mkLine l t = (l, Text.unpack t)
+    notComment :: (LineNumber,Text) -> Bool
+    notComment (_,t) = Text.null t || Text.head t /= '#'
 
-    notComment (_, '#' : _) = False
-    notComment _ = True
-
-    parse :: (LineNumber,String) -> (LineNumber,Command)
-    parse (l,s) =
-        case parseCommand s of
+    parse :: (LineNumber,Text) -> (LineNumber,Command)
+    parse (l,t) =
+        case parseCommand t of
           Just c -> (l,c)
-          Nothing -> error $ err "unparseable command" l s
+          Nothing -> error $ err "unparseable command" l (show t)
 
     getVersion :: [(LineNumber,Command)] -> (Version,[(LineNumber,Command)])
     getVersion ((l, NumCommand v) : (_,VersionCommand) : cs) =
@@ -712,8 +709,7 @@ readArticle thy art = do
                      where e = "couldn't execute command " ++ toString c
 
     err :: String -> LineNumber -> String -> String
-    err e l s = e ++ " at line " ++ show l ++
-                " of article file " ++ art ++ ":\n" ++ s
+    err e l s = art ++ ":" ++ show l ++ ": " ++ e ++ ":\n" ++ s
 
 -------------------------------------------------------------------------------
 -- A minimal theory containing the standard axioms

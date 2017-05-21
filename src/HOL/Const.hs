@@ -127,6 +127,14 @@ appendName = Name listNamespace "@"
 consName :: Name
 consName = Name listNamespace "::"
 
+-- Pairs
+
+pairNamespace :: Namespace
+pairNamespace = Namespace ["Data","Pair"]
+
+pairName :: Name
+pairName = Name pairNamespace ","
+
 -- Functions
 
 functionNamespace :: Namespace
@@ -134,6 +142,9 @@ functionNamespace = Namespace ["Function"]
 
 composeName :: Name
 composeName = Name functionNamespace "o"
+
+funpowName :: Name
+funpowName = Name functionNamespace "^"
 
 -- Natural numbers
 
@@ -179,19 +190,66 @@ subName = Name naturalNamespace "-"
 zeroName :: Name
 zeroName = Name naturalNamespace "zero"
 
+-- Real numbers
+
+realNamespace :: Namespace
+realNamespace = Namespace ["Number","Real"]
+
+addRealName :: Name
+addRealName = Name realNamespace "+"
+
+divRealName :: Name
+divRealName = Name realNamespace "/"
+
+fromNaturalRealName :: Name
+fromNaturalRealName = Name realNamespace "fromNatural"
+
+geRealName :: Name
+geRealName = Name realNamespace ">="
+
+gtRealName :: Name
+gtRealName = Name realNamespace ">"
+
+leRealName :: Name
+leRealName = Name realNamespace "<="
+
+ltRealName :: Name
+ltRealName = Name realNamespace "<"
+
+multRealName :: Name
+multRealName = Name realNamespace "*"
+
+powerRealName :: Name
+powerRealName = Name realNamespace "^"
+
+subRealName :: Name
+subRealName = Name realNamespace "-"
+
 -- Sets
 
 setNamespace :: Namespace
 setNamespace = Namespace ["Set"]
 
+deleteName :: Name
+deleteName = Name setNamespace "delete"
+
 differenceName :: Name
 differenceName = Name setNamespace "difference"
 
-inName :: Name
-inName = Name setNamespace "in"
+fromPredicateName :: Name
+fromPredicateName = Name setNamespace "fromPredicate"
+
+insertName :: Name
+insertName = Name setNamespace "insert"
 
 intersectName :: Name
 intersectName = Name setNamespace "intersect"
+
+memberName :: Name
+memberName = Name setNamespace "member"
+
+properSubsetName :: Name
+properSubsetName = Name setNamespace "properSubset"
 
 subsetName :: Name
 subsetName = Name setNamespace "subset"

@@ -100,3 +100,23 @@ ind = mkUndef indName
 
 primitives :: Set TypeOp
 primitives = Set.fromList [bool,fun,ind]
+
+-------------------------------------------------------------------------------
+-- Standard type operators
+-------------------------------------------------------------------------------
+
+-- Pairs
+
+pairNamespace :: Namespace
+pairNamespace = Namespace ["Data","Pair"]
+
+productName :: Name
+productName = Name pairNamespace "*"
+
+-- Pairs
+
+sumNamespace :: Namespace
+sumNamespace = Namespace ["Data","Sum"]
+
+sumName :: Name
+sumName = Name sumNamespace "+"
