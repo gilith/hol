@@ -13,12 +13,13 @@ where
 
 import Data.Set (Set)
 
+import qualified HOL.OpenTheory as OpenTheory
 import HOL.Print
 import qualified HOL.Theory as Theory
 import HOL.Thm (Thm)
 
 base :: IO (Set Thm)
-base = Theory.readArticle Theory.standard "base5.art"
+base = OpenTheory.readArticle Theory.standard "base.art"
 
 main :: IO ()
 main = do

@@ -230,6 +230,9 @@ subRealName = Name realNamespace "-"
 setNamespace :: Namespace
 setNamespace = Namespace ["Set"]
 
+crossName :: Name
+crossName = Name setNamespace "cross"
+
 deleteName :: Name
 deleteName = Name setNamespace "delete"
 

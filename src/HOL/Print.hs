@@ -341,6 +341,7 @@ instance Printable Term where
            (Const.gtName, 3, NonAssoc, Nothing),
            --
            -- Set theory
+           (Const.crossName, 7, LeftAssoc, Nothing),
            (Const.intersectName, 7, LeftAssoc, Nothing),
            (Const.differenceName, 6, LeftAssoc, Just "-"),
            (Const.unionName, 6, LeftAssoc, Nothing),
