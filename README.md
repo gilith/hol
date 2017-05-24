@@ -1,7 +1,7 @@
 The hol package
 ===============
 
-The [hol package][] implements a higher order logic kernel as a [Haskell][] library. It can read proof files in [OpenTheory][] format, and includes a pretty-printer compatible with the [standard theory library][].
+The [hol package][] is a [Haskell][] library that implements a higher order logic kernel. It can read proof files in [OpenTheory][] format, and includes a pretty-printer compatible with the [standard theory library][].
 
 This software is released under the [MIT License][].
 
@@ -28,11 +28,11 @@ Then use [cabal][] to run the test suite:
 Profile
 -------
 
-Before starting, make sure we have the relevant GHC libraries installed with profiling support. On a Debian system they are installed like so:
+Before starting, make sure the GHC system and the GHC text and transformers libraries are installed with profiling support. On a Debian system the following command installs them:
 
      apt-get install ghc-prof libghc-text-prof libghc-transformers-prof
 
-Next use [cabal][] to install the dependent libraries with profiling support:
+Next use [cabal][] to install the other dependent libraries with profiling support:
 
     cabal sandbox init
     cabal install --only-dependencies --enable-library-profiling
