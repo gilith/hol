@@ -73,3 +73,7 @@ benchmark hol-profile
     -fprof-auto-top
     "-with-rtsopts=-p -s -h -i0.1"
   main-is: Profile.hs
+
+source-repository head
+  type: git
+  location: git://github.com/gilith/hol.git
