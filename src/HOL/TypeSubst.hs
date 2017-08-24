@@ -51,6 +51,13 @@ null :: TypeSubst -> Bool
 null = Map.null . dest
 
 -------------------------------------------------------------------------------
+-- Equality
+-------------------------------------------------------------------------------
+
+instance Eq TypeSubst where
+  sub1 == sub2 = dest sub1 == dest sub2
+
+-------------------------------------------------------------------------------
 -- Primitive type substitutions
 -------------------------------------------------------------------------------
 
@@ -132,3 +139,18 @@ instance CanSubst Var where
       (fmap (Var n) ty', s')
     where
       (ty',s') = basicSubst ty s
+
+-------------------------------------------------------------------------------
+-- Composing type substitutions
+-------------------------------------------------------------------------------
+
+compose :: TypeSubst -> TypeSubst -> TypeSubst
+compose sub1 sub2 | HOL.TypeSubst.null sub2 = sub1
+compose sub1 sub2 | HOL.TypeSubst.null sub1 = sub2
+compose sub1 sub2 | otherwise =
+    mk $ fst $ Map.foldrWithKey inc (dest sub2, sub2) (dest sub1)
+  where
+    inc v1 t1 (m2,s2) = (m2',s2')
+      where
+        (t1',s2') = trySharingSubst t1 s2
+        m2' = Map.insert v1 t1' m2

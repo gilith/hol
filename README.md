@@ -12,18 +12,14 @@ Installing the hol package requires [cabal][]:
 
     git clone https://github.com/gilith/hol.git
     cd hol
-    cabal install .
+    cabal install
 
 Test
 ----
 
-First use the [opentheory tool] to create a test file:
+Use [cabal][] to run the test suite:
 
-    opentheory info --article -o base.art base
-
-Then use [cabal][] to run the test suite:
-
-    cabal test hol-test
+    cabal test
 
 Profile
 -------
@@ -44,7 +40,7 @@ Use the [opentheory tool] to create a benchmark file:
 
 Then use [cabal][] to run the benchmark:
 
-    cabal bench hol-profile
+    cabal bench
 
 The time and memory allocation profile of the program can be viewed in text format:
 

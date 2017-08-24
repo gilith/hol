@@ -34,6 +34,8 @@ import HOL.Thm (Thm)
 import qualified HOL.Thm as Thm
 import qualified HOL.Type as Type
 import qualified HOL.TypeOp as TypeOp
+import HOL.TypeSubst (TypeSubst)
+import qualified HOL.TypeSubst as TypeSubst
 import qualified HOL.TypeVar as TypeVar
 import qualified HOL.Var as Var
 
@@ -139,11 +141,16 @@ ppInfixOps dest pp =
 class Printable a where
   toDoc :: a -> PP.Doc
 
+  toStringWith :: PP.Style -> a -> String
+  toStringWith style = PP.renderStyle style . toDoc
+
   toString :: a -> String
-  toString =
-      PP.renderStyle style . toDoc
+  toString = toStringWith style
     where
       style = PP.style {PP.lineLength = 80, PP.ribbonsPerLine = 1.0}
+
+instance Printable PP.Doc where
+  toDoc = id
 
 instance Printable Integer where
   toDoc = PP.integer
@@ -242,6 +249,11 @@ instance Printable Type where
           lookupOp n = Map.lookup n infixOps
 
       isInfix = isJust . destInfix
+
+instance Printable TypeSubst where
+  toDoc = toDoc . map mk . Map.toAscList . TypeSubst.dest
+    where
+      mk (v,ty) = toDoc v <+> PP.text "|->" <+> toDoc ty
 
 -------------------------------------------------------------------------------
 -- Terms
