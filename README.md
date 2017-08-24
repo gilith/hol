@@ -31,8 +31,13 @@ Before starting, make sure the GHC system and the GHC text and transformers libr
 Next use [cabal][] to install the other dependent libraries with profiling support:
 
     cabal sandbox init
+    cabal configure --enable-library-profiling --enable-profiling --enable-benchmarks
     cabal install --only-dependencies --enable-library-profiling
-    cabal install --enable-library-profiling --enable-executable-profiling .
+
+Build the hol package library and benchmark program:
+
+    cabal configure --enable-library-profiling --enable-profiling --enable-benchmarks
+    cabal build
 
 Use the [opentheory tool] to create a benchmark file:
 

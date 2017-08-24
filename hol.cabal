@@ -7,6 +7,7 @@ license-file: LICENSE
 cabal-version: >= 1.8.0.2
 build-type: Simple
 extra-source-files: README.md doc/axioms.txt
+extra-tmp-files: hol-profile.aux hol-profile.hp hol-profile.pdf hol-profile.prof hol-profile.ps
 author: Joe Leslie-Hurd <joe@gilith.com>
 maintainer: Joe Leslie-Hurd <joe@gilith.com>
 description:
