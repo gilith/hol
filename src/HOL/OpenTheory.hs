@@ -13,20 +13,24 @@ where
 
 import Control.Monad (guard)
 import qualified Data.ByteString.Lazy as ByteString
-import qualified Data.Char as Char
 import qualified Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Data.Maybe (mapMaybe)
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as Text
 import qualified Data.Text.Lazy.Encoding as Text.Encoding
+import Text.Parsec ((<|>))
+import qualified Text.Parsec as Parsec
+import Text.Parsec.Text.Lazy ()
 import Text.PrettyPrint ((<>),(<+>),($+$))
 import qualified Text.PrettyPrint as PP
 
 import HOL.Data
 import HOL.Name
+import HOL.Parse
 import HOL.Print
 import qualified HOL.Rule as Rule
 import HOL.Sequent (Sequent)
@@ -46,37 +50,102 @@ import qualified HOL.Var as Var
 -- Numbers
 -------------------------------------------------------------------------------
 
-type Number = Integer
+newtype Number = Number Integer
+  deriving (Eq,Ord,Show)
 
-parseNumber :: String -> Maybe Number
-parseNumber =
-    number
-  where
-    number [] = Nothing
-    number ['0'] = Just 0
-    number ('-' : s) = fmap negate $ positive s
-    number s = positive s
+instance Printable Number where
+  toDoc (Number i) = PP.integer i
 
-    positive [] = Nothing
-    positive ('0' : _) = Nothing
-    positive s = digits 0 s
+instance Parsable Number where
+  parser = do
+      i <- parser
+      return (Number i)
 
-    digits z [] = Just z
-    digits z (c : cs) = do
-      guard (Char.isDigit c)
-      let d = toInteger $ Char.digitToInt c
-      digits (z * 10 + d) cs
+  fromText = fmap Number . fromText
+
+  fromString = fmap Number . fromString
 
 -------------------------------------------------------------------------------
 -- Interpretations
 -------------------------------------------------------------------------------
+
+data Symbol =
+    TypeSymbol Name
+  | ConstSymbol Name
+  deriving (Eq,Ord,Show)
+
+data Interpret = Interpret Symbol Name
+
+data Interpretation = Interpretation (Map Symbol Name)
+
+symbolName :: Symbol -> Name
+symbolName (TypeSymbol n) = n
+symbolName (ConstSymbol n) = n
+
+destInterpret :: Interpret -> (Symbol,Name)
+destInterpret (Interpret s n) = (s,n)
+
+mkInterpretation :: Map Symbol Name -> Interpretation
+mkInterpretation m = Interpretation (Map.filterWithKey norm m)
+  where
+    norm s n = symbolName s /= n
+
+emptyInterpretation :: Interpretation
+emptyInterpretation = mkInterpretation Map.empty
+
+fromListInterpretation :: [Interpret] -> Maybe Interpretation
+fromListInterpretation l = do
+    guard (Map.size m == length l)
+    return (mkInterpretation m)
+  where
+    m = Map.fromList $ map destInterpret l
+
+fromListInterpretationUnsafe :: [Interpret] -> Interpretation
+fromListInterpretationUnsafe l =
+    case fromListInterpretation l of
+      Just i -> i
+      Nothing -> error "HOL.OpenTheory.fromListInterpretation failed"
+
+instance Parsable Interpret where
+  parser = do
+      k <- kind
+      space
+      n1 <- parser
+      space
+      _ <- Parsec.string "as"
+      space
+      n2 <- parser
+      return $ Interpret (k n1) n2
+    where
+      kind = (Parsec.string "type" >> return TypeSymbol)
+             <|> (Parsec.string "const" >> return ConstSymbol)
+
+      space = Parsec.skipMany1 spaceParser
+
+instance Parsable Interpretation where
+  parser = do
+      Parsec.skipMany eolParser
+      ls <- Parsec.sepEndBy line (Parsec.skipMany1 eolParser)
+      return $ fromListInterpretationUnsafe (mapMaybe id ls)
+    where
+      line = comment <|> interpret
+
+      comment = do
+        _ <- Parsec.char '#'
+        Parsec.skipMany lineParser
+        return Nothing
+
+      interpret = do
+        i <- parser
+        Parsec.skipMany spaceParser
+        return $ Just i
 
 -------------------------------------------------------------------------------
 -- Objects
 -------------------------------------------------------------------------------
 
 data Object =
-    NumObject Number
+    NumberObject Number
   | NameObject Name
   | ListObject [Object]
   | TypeOpObject TypeOp
@@ -97,10 +166,10 @@ instance Objective Object where
 
   fromObject = Just
 
-instance Objective Integer where
-  toObject = NumObject
+instance Objective Number where
+  toObject = NumberObject
 
-  fromObject (NumObject i) = Just i
+  fromObject (NumberObject i) = Just i
   fromObject _ = Nothing
 
 instance Objective Name where
@@ -216,7 +285,7 @@ pop5Object s = do
   return (a,b,c,d,e,s'')
 
 instance Printable Object where
-  toDoc (NumObject i) = toDoc i
+  toDoc (NumberObject i) = toDoc i
   toDoc (NameObject n) = toDoc n
   toDoc (ListObject l) = toDoc l
   toDoc (TypeOpObject t) = toDoc t
@@ -232,7 +301,7 @@ instance Printable Object where
 
 data Command =
   -- Special commands
-    NumCommand Number
+    NumberCommand Number
   | NameCommand Name
   -- Regular commands
   | AbsTermCommand
@@ -319,12 +388,12 @@ parseCommand =
     regular t =
        case Map.lookup t regulars of
          Just c -> Just c
-         Nothing -> special $ Text.unpack t
+         Nothing -> special t
 
-    special s =
-       case parseName s of
+    special t =
+       case fromText t of
          Just n -> Just $ NameCommand n
-         Nothing -> fmap NumCommand $ parseNumber s
+         Nothing -> fmap NumberCommand $ fromText t
 
 instance Printable Command where
   toDoc =
@@ -332,7 +401,7 @@ instance Printable Command where
     where
       regulars = Map.fromList $ map (\(c,s) -> (c, PP.text s)) regularCommands
 
-      go (NumCommand i) = PP.integer i
+      go (NumberCommand i) = toDoc i
       go (NameCommand n) = toDoc n
       go DefineTypeOpLegacyCommand = legacy DefineTypeOpCommand
       go c = case Map.lookup c regulars of
@@ -348,19 +417,19 @@ instance Printable Command where
 type Version = Number
 
 supportedCommand :: Version -> Command -> Bool
-supportedCommand 5 DefineConstListCommand = False
-supportedCommand 5 DefineTypeOpCommand = False
-supportedCommand 5 HdTlCommand = False
-supportedCommand 5 PragmaCommand = False
-supportedCommand 5 ProveHypCommand = False
-supportedCommand 5 SymCommand = False
-supportedCommand 5 TransCommand = False
-supportedCommand 5 VersionCommand = False
-supportedCommand 6 DefineTypeOpLegacyCommand = False
+supportedCommand (Number 5) DefineConstListCommand = False
+supportedCommand (Number 5) DefineTypeOpCommand = False
+supportedCommand (Number 5) HdTlCommand = False
+supportedCommand (Number 5) PragmaCommand = False
+supportedCommand (Number 5) ProveHypCommand = False
+supportedCommand (Number 5) SymCommand = False
+supportedCommand (Number 5) TransCommand = False
+supportedCommand (Number 5) VersionCommand = False
+supportedCommand (Number 6) DefineTypeOpLegacyCommand = False
 supportedCommand _ _ = True
 
 versionCommand :: Version -> Command -> Maybe Command
-versionCommand 5 DefineTypeOpCommand = Just DefineTypeOpLegacyCommand
+versionCommand (Number 5) DefineTypeOpCommand = Just DefineTypeOpLegacyCommand
 versionCommand _ VersionCommand = Nothing
 versionCommand v c = if supportedCommand v c then Just c else Nothing
 
@@ -437,7 +506,7 @@ initialState =
 executeCommand :: Theory -> State -> Command -> Maybe State
 executeCommand thy state cmd =
     case cmd of
-      NumCommand i -> Just $ pushState i state
+      NumberCommand i -> Just $ pushState i state
       NameCommand n -> Just $ pushState n state
       AbsTermCommand -> do
         (b,v,s) <- pop2State state
@@ -611,24 +680,24 @@ readArticle thy art = do
     bs <- ByteString.readFile art
     let txt = Text.Encoding.decodeUtf8 bs
     let ls = zip [1..] $ Text.lines txt
-    let (v,cs) = getVersion $ map parse $ filter notComment ls
+    let (v,cs) = getVersion $ map parseCmd $ filter notComment ls
     let s = List.foldl' execute initialState $ map (version v) cs
     return $ theorems s
   where
     notComment :: (LineNumber,Text) -> Bool
     notComment (_,t) = Text.null t || Text.head t /= '#'
 
-    parse :: (LineNumber,Text) -> (LineNumber,Command)
-    parse (l,t) =
+    parseCmd :: (LineNumber,Text) -> (LineNumber,Command)
+    parseCmd (l,t) =
         case parseCommand t of
           Just c -> (l,c)
           Nothing -> error $ err "unparseable command" l (show t)
 
     getVersion :: [(LineNumber,Command)] -> (Version,[(LineNumber,Command)])
-    getVersion ((l, NumCommand v) : (_,VersionCommand) : cs) =
-        if v == 6 then (v,cs)
+    getVersion ((l, NumberCommand v) : (_,VersionCommand) : cs) =
+        if v == Number 6 then (v,cs)
         else error $ err "bad version number" l (show v)
-    getVersion cs = (5,cs)
+    getVersion cs = (Number 5, cs)
 
     version :: Version -> (LineNumber,Command) -> (LineNumber,Command)
     version v (l,c) =

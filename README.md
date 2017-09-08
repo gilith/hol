@@ -24,9 +24,9 @@ Use [cabal][] to run the test suite:
 Profile
 -------
 
-Before starting, make sure the GHC system and the GHC text and transformers libraries are installed with profiling support. On a Debian system the following command installs them:
+Before starting, make sure the GHC system and the GHC text, transformers and parsec libraries are installed with profiling support. On a Debian system the following command installs them:
 
-     apt-get install ghc-prof libghc-text-prof libghc-transformers-prof
+     apt-get install ghc-prof libghc-text-prof libghc-transformers-prof libghc-parsec3-prof
 
 Next use [cabal][] to install the other dependent libraries with profiling support:
 
