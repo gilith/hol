@@ -143,28 +143,28 @@ defineTypeOpLegacy opName absName repName tyVarl existenceTh = do
           Just th' -> th'
           Nothing -> error "HOL.Rule.defineTypeOpLegacy failed"
 
-    convertAbsRep th0 = do  -- |- (\a. abs (rep a)) = (\a. a)
+    convertAbsRep th0 = do  -- ⊢ (\a. abs (rep a)) = (\a. a)
         aId <- Term.rhs $ TermAlpha.dest $ Thm.concl th0  -- \a. a
         (_,aTm) <- Term.destAbs aId  -- a
-        th1 <- rator th0 aTm  -- |- (\a. abs (rep a)) a = (\a. a) a
+        th1 <- rator th0 aTm  -- ⊢ (\a. abs (rep a)) a = (\a. a) a
         (tm0,rhsTm) <- Term.destApp $ TermAlpha.dest $ Thm.concl th1
         (eqTm,lhsTm) <- Term.destApp tm0
-        th2 <- Thm.betaConv lhsTm  -- |- (\a. abs (rep a)) a = abs (rep a)
+        th2 <- Thm.betaConv lhsTm  -- ⊢ (\a. abs (rep a)) a = abs (rep a)
         th3 <- rand eqTm th2
-        th4 <- Thm.betaConv rhsTm  -- |- (\a. a) a = a
+        th4 <- Thm.betaConv rhsTm  -- ⊢ (\a. a) a = a
         th5 <- Thm.mkApp th3 th4
-        Thm.eqMp th5 th1  -- |- abs (rep a) = a
+        Thm.eqMp th5 th1  -- ⊢ abs (rep a) = a
 
     convertRepAbs th0 = do  -- (\r. rep (abs r) = r) = (\r. p r)
         tm0 <- Term.lhs $ TermAlpha.dest $ Thm.concl th0
         (_,tm1) <- Term.destAbs tm0  -- rep (abs r) = r
         rTm <- Term.rhs tm1  -- r
-        th1 <- rator th0 rTm  -- |- (\r. rep (abs r) = r) r <=> (\r. p r) r
+        th1 <- rator th0 rTm  -- ⊢ (\r. rep (abs r) = r) r <=> (\r. p r) r
         (tm2,rhsTm) <- Term.destApp $ TermAlpha.dest $ Thm.concl th1
         (iffTm,lhsTm) <- Term.destApp tm2
         th2 <- Thm.betaConv lhsTm
         th3 <- rand iffTm th2
         th4 <- Thm.betaConv rhsTm
         th5 <- Thm.mkApp th3 th4
-        th6 <- Thm.eqMp th5 th1  -- |- rep (abs r) = r <=> p r
-        sym th6  -- |- p r <=> rep (abs r) = r
+        th6 <- Thm.eqMp th5 th1  -- ⊢ rep (abs r) = r <=> p r
+        sym th6  -- ⊢ p r <=> rep (abs r) = r
