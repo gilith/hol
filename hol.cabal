@@ -6,7 +6,7 @@ license: MIT
 license-file: LICENSE
 cabal-version: >= 1.8.0.2
 build-type: Simple
-extra-source-files: README.md doc/axioms.txt
+extra-source-files: README.md doc/axioms.txt doc/bool.txt test/bool.art test/bool.int test/bool.thy
 extra-tmp-files: hol-profile.aux hol-profile.hp hol-profile.pdf hol-profile.prof hol-profile.ps
 author: Joe Leslie-Hurd <joe@gilith.com>
 maintainer: Joe Leslie-Hurd <joe@gilith.com>
@@ -20,6 +20,7 @@ Library
     containers >= 0.5 && < 0.6,
     parsec >= 3.1 && < 3.2,
     pretty >= 1.1 && < 1.2,
+    process >= 1.2 && < 1.3,
     text >= 0.11 && < 0.12,
     transformers >= 0.3 && < 0.4
   hs-source-dirs: src
@@ -55,6 +56,7 @@ test-suite hol-test
     containers >= 0.5 && < 0.6,
     parsec >= 3.1 && < 3.2,
     pretty >= 1.1 && < 1.2,
+    process >= 1.2 && < 1.3,
     QuickCheck >= 2.4 && < 2.5,
     text >= 0.11 && < 0.12,
     transformers >= 0.3 && < 0.4
@@ -70,6 +72,7 @@ benchmark hol-profile
     containers >= 0.5 && < 0.6,
     parsec >= 3.1 && < 3.2,
     pretty >= 1.1 && < 1.2,
+    process >= 1.2 && < 1.3,
     text >= 0.11 && < 0.12,
     transformers >= 0.3 && < 0.4
   hs-source-dirs: src

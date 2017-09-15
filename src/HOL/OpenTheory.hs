@@ -13,6 +13,7 @@ where
 
 import Control.Monad (guard)
 import qualified Data.ByteString.Lazy as ByteString
+import qualified Data.Char as Char
 import qualified Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -22,6 +23,7 @@ import qualified Data.Set as Set
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as Text
 import qualified Data.Text.Lazy.Encoding as Text.Encoding
+import qualified System.Process
 import Text.Parsec ((<|>))
 import qualified Text.Parsec as Parsec
 import Text.Parsec.Text.Lazy ()
@@ -75,6 +77,7 @@ data Symbol =
   deriving (Eq,Ord,Show)
 
 data Interpret = Interpret Symbol Name
+  deriving (Eq,Ord,Show)
 
 data Interpretation = Interpretation (Map Symbol Name)
 
@@ -106,21 +109,40 @@ fromListInterpretationUnsafe l =
       Just i -> i
       Nothing -> error "HOL.OpenTheory.fromListInterpretation failed"
 
-instance Parsable Interpret where
+instance Printable Symbol where
+  toDoc (TypeSymbol n) = PP.text "type" <+> quoteName n
+  toDoc (ConstSymbol n) = PP.text "const" <+> quoteName n
+
+instance Parsable Symbol where
   parser = do
       k <- kind
       space
-      n1 <- parser
-      space
-      _ <- Parsec.string "as"
-      space
-      n2 <- parser
-      return $ Interpret (k n1) n2
+      n <- parser
+      return $ k n
     where
       kind = (Parsec.string "type" >> return TypeSymbol)
              <|> (Parsec.string "const" >> return ConstSymbol)
 
       space = Parsec.skipMany1 spaceParser
+
+instance Printable Interpret where
+  toDoc (Interpret s n) = toDoc s <+> PP.text "as" <+> quoteName n
+
+instance Parsable Interpret where
+  parser = do
+      s <- parser
+      space
+      _ <- Parsec.string "as"
+      space
+      n2 <- parser
+      return $ Interpret s n2
+    where
+      space = Parsec.skipMany1 spaceParser
+
+instance Printable Interpretation where
+  toDoc (Interpretation m) = PP.vcat (map mk (Map.toList m))
+    where
+      mk (s,n) = toDoc (Interpret s n)
 
 instance Parsable Interpretation where
   parser = do
@@ -128,14 +150,14 @@ instance Parsable Interpretation where
       ls <- Parsec.sepEndBy line (Parsec.skipMany1 eolParser)
       return $ fromListInterpretationUnsafe (mapMaybe id ls)
     where
-      line = comment <|> interpret
+      line = comment <|> interpretSymbol
 
       comment = do
         _ <- Parsec.char '#'
         Parsec.skipMany lineParser
         return Nothing
 
-      interpret = do
+      interpretSymbol = do
         i <- parser
         Parsec.skipMany spaceParser
         return $ Just i
@@ -379,21 +401,24 @@ regularCommands =
      (VarTypeCommand,"varType"),
      (VersionCommand,"version")]
 
-parseCommand :: Text -> Maybe Command
-parseCommand =
-    regular
-  where
-    regulars = Map.fromList $ map (\(c,s) -> (Text.pack s, c)) regularCommands
+instance Parsable Command where
+  parser = error "Parsec Command parser not implemented"
 
-    regular t =
-       case Map.lookup t regulars of
-         Just c -> Just c
-         Nothing -> special t
+  fromText = regular
+    where
+      regular t =
+         case Map.lookup t regulars of
+           Just c -> Just c
+           Nothing -> special t
 
-    special t =
-       case fromText t of
-         Just n -> Just $ NameCommand n
-         Nothing -> fmap NumberCommand $ fromText t
+      special t =
+         case fromText t of
+           Just n -> Just $ NameCommand n
+           Nothing -> fmap NumberCommand $ fromText t
+
+      regulars = Map.fromList $ map mk regularCommands
+        where
+          mk (c,s) = (Text.pack s, c)
 
 instance Printable Command where
   toDoc =
@@ -689,7 +714,7 @@ readArticle thy art = do
 
     parseCmd :: (LineNumber,Text) -> (LineNumber,Command)
     parseCmd (l,t) =
-        case parseCommand t of
+        case fromText t of
           Just c -> (l,c)
           Nothing -> error $ err "unparseable command" l (show t)
 
@@ -717,3 +742,304 @@ readArticle thy art = do
 
     err :: String -> LineNumber -> String -> String
     err e l s = art ++ ":" ++ show l ++ ": " ++ e ++ ":\n" ++ s
+
+-------------------------------------------------------------------------------
+-- Theory names
+-------------------------------------------------------------------------------
+
+newtype TheoryName = TheoryName {destTheoryName :: String}
+  deriving (Eq,Ord,Show)
+
+instance Printable TheoryName where
+  toDoc = PP.text . destTheoryName
+
+instance Parsable TheoryName where
+  parser = do
+      cs <- Parsec.sepBy1 component (Parsec.char sep)
+      return $ TheoryName (List.intercalate [sep] cs)
+    where
+      component = do
+          h <- Parsec.lower
+          t <- Parsec.many (Parsec.lower <|> Parsec.digit)
+          return (h : t)
+
+      sep = '-'
+
+-------------------------------------------------------------------------------
+-- Theory values
+-------------------------------------------------------------------------------
+
+data TheoryValue = TheoryValue TheoryName String
+  deriving (Eq,Ord,Show)
+
+instance Printable TheoryValue where
+  toDoc (TheoryValue k v) = toDoc k <> PP.char ':' <+> PP.text v
+
+instance Parsable TheoryValue where
+  parser = do
+      Parsec.skipMany spaceParser
+      n <- parser
+      Parsec.skipMany spaceParser
+      _ <- Parsec.char ':'
+      Parsec.skipMany spaceParser
+      v <- Parsec.many lineParser
+      return $ TheoryValue n (List.dropWhileEnd Char.isSpace v)
+
+printTheoryValue :: Printable a => TheoryName -> a -> TheoryValue
+printTheoryValue n a = TheoryValue n (toString a)
+
+matchTheoryValue :: TheoryName -> TheoryValue -> Maybe String
+matchTheoryValue n (TheoryValue k v) = if k == n then Just v else Nothing
+
+parseTheoryValue :: Parsable a => TheoryName -> TheoryValue -> Maybe a
+parseTheoryValue n v = do
+    s <- matchTheoryValue n v
+    a <- fromString s
+    return a
+
+-------------------------------------------------------------------------------
+-- Theory information
+-------------------------------------------------------------------------------
+
+newtype TheoryInfo = TheoryInfo {destTheoryInfo :: [TheoryValue]}
+  deriving (Eq,Ord,Show)
+
+nullTheoryInfo :: TheoryInfo -> Bool
+nullTheoryInfo = null . destTheoryInfo
+
+appendTheoryInfo :: TheoryInfo -> TheoryInfo -> TheoryInfo
+appendTheoryInfo (TheoryInfo l) (TheoryInfo l') = TheoryInfo (l ++ l')
+
+concatTheoryInfo :: [TheoryInfo] -> TheoryInfo
+concatTheoryInfo = TheoryInfo . concat . map destTheoryInfo
+
+firstTheoryInfo :: (TheoryValue -> Maybe a) ->
+                   TheoryInfo -> Maybe (a,TheoryInfo)
+firstTheoryInfo f = g [] . destTheoryInfo
+  where
+    g _ [] = Nothing
+    g l (h : t) = case f h of
+                    Just a -> Just (a, TheoryInfo (foldl (flip (:)) t l))
+                    Nothing -> g (h : l) t
+
+getFirstTheoryInfo :: [TheoryInfo -> Maybe (a,TheoryInfo)] ->
+                      TheoryInfo -> Maybe (a,TheoryInfo)
+getFirstTheoryInfo [] _ = Nothing
+getFirstTheoryInfo (f : fs) i =
+    case f i of
+      Nothing -> getFirstTheoryInfo fs i
+      x -> x
+
+getMapTheoryInfo :: (a -> b) -> (TheoryInfo -> Maybe (a,TheoryInfo)) ->
+                    TheoryInfo -> Maybe (b,TheoryInfo)
+getMapTheoryInfo f g = let f0 (a,i) = (f a, i) in fmap f0 . g
+
+getMaybeTheoryInfo :: (TheoryInfo -> Maybe (a,TheoryInfo)) ->
+                      TheoryInfo -> Maybe (Maybe a, TheoryInfo)
+getMaybeTheoryInfo f i =
+    case f i of
+      Just (a,i') -> Just (Just a, i')
+      Nothing -> Just (Nothing,i)
+
+instance Printable TheoryInfo where
+  toDoc = PP.vcat . map toDoc . destTheoryInfo
+
+instance Parsable TheoryInfo where
+  parser = fmap TheoryInfo $ Parsec.endBy parser eolParser
+
+class Informative a where
+  toInfo :: a -> TheoryInfo
+
+  getInfo :: TheoryInfo -> Maybe (a,TheoryInfo)
+
+  fromInfo :: TheoryInfo -> Maybe a
+  fromInfo i = do
+      (a,i') <- getInfo i
+      guard $ nullTheoryInfo i'
+      return a
+
+instance Informative a => Informative [a] where
+  toInfo = concatTheoryInfo . map toInfo
+
+  getInfo = g []
+    where
+      g l i = case getInfo i of
+                Just (a,i') -> g (a : l) i'
+                Nothing -> Just (l,i)
+
+instance (Informative a, Informative b) => Informative (a,b) where
+  toInfo (a,b) = appendTheoryInfo (toInfo a) (toInfo b)
+
+  getInfo i = do
+      (a,i') <- getInfo i
+      (b,i'') <- getInfo i'
+      return ((a,b),i'')
+
+-------------------------------------------------------------------------------
+-- Theory file paths
+-------------------------------------------------------------------------------
+
+newtype TheoryFilePath = TheoryFilePath {destTheoryFilePath :: FilePath}
+  deriving (Eq,Ord,Show)
+
+instance Printable TheoryFilePath where
+  toDoc = PP.doubleQuotes . PP.text . destTheoryFilePath
+
+instance Parsable TheoryFilePath where
+  parser = do
+      _ <- Parsec.char '"'
+      f <- Parsec.many (Parsec.noneOf "\"\n")
+      _ <- Parsec.char '"'
+      return $ TheoryFilePath f
+
+-------------------------------------------------------------------------------
+-- Theory interpretations
+-------------------------------------------------------------------------------
+
+data TheoryInterpret =
+    TheoryInterpret Interpret
+  | TheoryInterpretation TheoryFilePath
+  deriving (Eq,Ord,Show)
+
+instance Informative TheoryInterpret where
+  toInfo (TheoryInterpret i) =
+      TheoryInfo [printTheoryValue (TheoryName "interpret") i]
+  toInfo (TheoryInterpretation f) =
+      TheoryInfo [printTheoryValue (TheoryName "interpretation") f]
+
+  getInfo =
+      getFirstTheoryInfo [getInterpret,getInterpretation]
+    where
+      getInterpret =
+        getMapTheoryInfo TheoryInterpret
+          (firstTheoryInfo (parseTheoryValue (TheoryName "interpret")))
+
+      getInterpretation =
+        getMapTheoryInfo TheoryInterpretation
+          (firstTheoryInfo (parseTheoryValue (TheoryName "interpretation")))
+
+-------------------------------------------------------------------------------
+-- Theory blocks
+-------------------------------------------------------------------------------
+
+newtype TheoryBlockName = TheoryBlockName {destTheoryBlockName :: TheoryName}
+  deriving (Eq,Ord,Show)
+
+data TheoryBlockOperation =
+    ArticleBlock TheoryFilePath
+  | PackageBlock {package :: String, checksum :: Maybe String}
+  | UnionBlock
+  deriving (Eq,Ord,Show)
+
+data TheoryBlock =
+    TheoryBlock
+      {name :: TheoryBlockName,
+       imports :: [TheoryBlockName],
+       interpret :: [TheoryInterpret],
+       operation :: TheoryBlockOperation}
+  deriving (Eq,Ord,Show)
+
+instance Printable TheoryBlockName where
+  toDoc = toDoc . destTheoryBlockName
+
+instance Parsable TheoryBlockName where
+  parser = fmap TheoryBlockName parser
+
+instance Informative TheoryBlockName where
+  toInfo n = TheoryInfo [printTheoryValue (TheoryName "import") n]
+
+  getInfo = firstTheoryInfo (parseTheoryValue (TheoryName "import"))
+
+instance Informative TheoryBlockOperation where
+  toInfo (ArticleBlock f) = TheoryInfo [fv]
+    where
+      fv = printTheoryValue (TheoryName "article") f
+  toInfo (PackageBlock p c) = TheoryInfo (pv : cv)
+    where
+      pv = TheoryValue (TheoryName "package") p
+      cv = case c of
+             Just s -> [TheoryValue (TheoryName "checksum") s]
+             Nothing -> []
+  toInfo UnionBlock = TheoryInfo []
+
+  getInfo =
+      getFirstTheoryInfo [getArticleBlock,getPackageBlock,getUnionBlock]
+    where
+      getArticleBlock = getMapTheoryInfo ArticleBlock getArticle
+
+      getPackageBlock i = do
+        (p,i') <- getPackage i
+        (c,i'') <- getMaybeTheoryInfo getChecksum i'
+        return (PackageBlock p c, i'')
+
+      getUnionBlock i = Just (UnionBlock,i)
+
+      getArticle = firstTheoryInfo (parseTheoryValue (TheoryName "article"))
+      getPackage = firstTheoryInfo (matchTheoryValue (TheoryName "package"))
+      getChecksum = firstTheoryInfo (matchTheoryValue (TheoryName "checksum"))
+
+mkTheoryBlock :: TheoryBlockName -> TheoryInfo -> Maybe TheoryBlock
+mkTheoryBlock n info = do
+    (imp,(int,op)) <- fromInfo info
+    guard (op /= UnionBlock || null int)
+    return $ TheoryBlock n imp int op
+
+destTheoryBlock :: TheoryBlock -> (TheoryBlockName,TheoryInfo)
+destTheoryBlock (TheoryBlock n imp int op) = (n, toInfo (imp,(int,op)))
+
+instance Printable TheoryBlock where
+  toDoc b =
+      (toDoc n <+> PP.lbrace) $+$
+      PP.nest 2 (toDoc i) $+$
+      PP.rbrace
+    where
+      (n,i) = destTheoryBlock b
+
+instance Parsable TheoryBlock where
+  parser = do
+      n <- opener
+      i <- parser
+      closer
+      case mkTheoryBlock n i of
+        Just b -> return b
+        Nothing -> Parsec.parserFail "couldn't parse block"
+    where
+      opener = do
+        Parsec.skipMany spaceParser
+        n <- parser
+        Parsec.skipMany spaceParser
+        _ <- Parsec.char '{'
+        Parsec.skipMany spaceParser
+        eolParser
+        return n
+
+      closer = do
+        Parsec.skipMany spaceParser
+        _ <- Parsec.char '}'
+        Parsec.skipMany spaceParser
+
+-------------------------------------------------------------------------------
+-- Theory files
+-------------------------------------------------------------------------------
+
+data TheoryFile = TheoryFile TheoryInfo [TheoryBlock]
+  deriving (Eq,Ord,Show)
+
+instance Printable TheoryFile where
+  toDoc (TheoryFile i bs) =
+      PP.vcat (List.intersperse (PP.text "") (toDoc i : map toDoc bs))
+
+instance Parsable TheoryFile where
+  parser = do
+      Parsec.skipMany eolParser
+      i <- parser
+      Parsec.skipMany eolParser
+      bs <- Parsec.sepEndBy parser (Parsec.skipMany1 eolParser)
+      return $ TheoryFile i bs
+
+-------------------------------------------------------------------------------
+-- Interface to the opentheory tool
+-------------------------------------------------------------------------------
+
+opentheory :: [String] -> IO String
+opentheory args = System.Process.readProcess "opentheory" args []

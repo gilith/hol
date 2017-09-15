@@ -1,0 +1,21 @@
+Boolean operator definitions
+
+|- F <=> !p. p
+
+|- (~) = \p. p ==> F
+
+|- T <=> (\p. p) = \p. p
+
+|- (!) = \p. p = \x. T
+
+|- (==>) = \p q. p /\ q <=> p
+
+|- (/\) = \p q. (\f. f p q) = \f. f T T
+
+|- (?) = \p. !q. (!x. p x ==> q) ==> q
+
+|- (\/) = \p q. !r. (p ==> r) ==> (q ==> r) ==> r
+
+|- (?!) = \p. (?) p /\ !x y. p x /\ p y ==> x = y
+
+|- cond = \t t1 t2. select x. ((t <=> T) ==> x = t1) /\ ((t <=> F) ==> x = t2)

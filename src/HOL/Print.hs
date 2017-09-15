@@ -178,6 +178,20 @@ instance Printable Namespace where
 instance Printable Name where
   toDoc (Name (Namespace l) s) = toDoc (Namespace (l ++ [s]))
 
+quoteNamespace :: Namespace -> PP.Doc
+quoteNamespace (Namespace l) =
+    PP.doubleQuotes $ PP.hcat $ PP.punctuate sep $ map escape l
+  where
+    escape = PP.hcat . map mk
+    mk c = let d = PP.char c in if escapable c then esc <> d else d
+    escapable = flip elem "\"\\."
+
+    sep = PP.text "."
+    esc = PP.char '\\'
+
+quoteName :: Name -> PP.Doc
+quoteName (Name (Namespace l) s) = quoteNamespace (Namespace (l ++ [s]))
+
 -------------------------------------------------------------------------------
 -- Types
 -------------------------------------------------------------------------------

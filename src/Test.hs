@@ -12,15 +12,23 @@ module Main
 where
 
 import Data.List (sort)
+import qualified Data.List as List
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Test.QuickCheck
 import qualified Text.PrettyPrint as PP
 
 import HOL.Name
+import HOL.OpenTheory (Interpretation,TheoryFile)
+import qualified HOL.OpenTheory as OpenTheory
+import HOL.Parse
 import HOL.Print
 import qualified HOL.Rule as Rule
 import qualified HOL.Subst as Subst
 import qualified HOL.Term as Term
 import qualified HOL.TermAlpha as TermAlpha
+import qualified HOL.Theory as Theory
+import HOL.Thm (Thm)
 import qualified HOL.Thm as Thm
 import qualified HOL.Type as Type
 import qualified HOL.TypeSubst as TypeSubst
@@ -197,14 +205,76 @@ printedAxioms =
     style = PP.style {PP.lineLength = lineLength, PP.ribbonsPerLine = 2.0}
 
 printAxioms :: String -> (String,Bool)
-printAxioms golden = ("Printing axioms",prop)
+printAxioms ref = ("Printing axioms",prop)
   where
-    prop = printedAxioms == golden
+    prop = printedAxioms == ref
 
-{- Use this to update the axioms file
+{- Use this to update the reference file
 updatePrintedAxioms :: IO ()
 updatePrintedAxioms = writeFile "doc/axioms.txt" printedAxioms
 -}
+
+--------------------------------------------------------------------------------
+-- OpenTheory articles
+--------------------------------------------------------------------------------
+
+printedArticle :: Set Thm -> String
+printedArticle ths =
+    "Boolean operator definitions\n" ++
+    "\n" ++
+    List.intercalate "\n\n" (map toString $ Set.toList ths) ++ "\n"
+
+printArticle :: Set Thm -> String -> (String,Bool)
+printArticle ths ref = ("Summarizing article",prop)
+  where
+    prop = printedArticle ths == ref
+
+{- Use this to update the reference file
+updatePrintedArticle :: IO ()
+updatePrintedArticle = do
+    ths <- OpenTheory.readArticle Theory.standard "test/bool.art"
+    writeFile "doc/bool.txt" $ printedArticle ths
+-}
+
+--------------------------------------------------------------------------------
+-- OpenTheory interpretations
+--------------------------------------------------------------------------------
+
+printedInterpretation :: Interpretation -> String
+printedInterpretation int =
+    separator ++ "\n" ++
+    "# Interpreting Boolean operator names into " ++
+    "the OpenTheory standard namespace\n" ++
+    separator ++ "\n" ++
+    "\n" ++
+    "# Data\n" ++
+    "\n" ++
+    "# Data.Bool\n" ++
+    "\n" ++
+    toString int ++ "\n"
+  where
+    separator = replicate 79 '#'
+
+printInterpretation :: String -> (String,Bool)
+printInterpretation ref = ("Parsing/printing interpretation",prop)
+  where
+    prop = case fromString ref of
+             Nothing -> False
+             Just int -> printedInterpretation int == ref
+
+--------------------------------------------------------------------------------
+-- OpenTheory theory files
+--------------------------------------------------------------------------------
+
+printedTheoryFile :: TheoryFile -> String
+printedTheoryFile thy = toString thy ++ "\n"
+
+printTheoryFile :: String -> (String,Bool)
+printTheoryFile ref = ("Parsing/printing theory file",prop)
+  where
+    prop = case fromString ref of
+             Nothing -> False
+             Just thy -> printedTheoryFile thy == ref
 
 --------------------------------------------------------------------------------
 -- Main function
@@ -217,6 +287,15 @@ main = do
     assert compareTermAlpha
     assert substAvoidCapture
     assert inferenceRules
-    do axioms <- readFile "doc/axioms.txt"
-       assert $ printAxioms axioms
+    do --updatePrintedAxioms
+       ref <- readFile "doc/axioms.txt"
+       assert $ printAxioms ref
+    do --updatePrintedArticle
+       ths <- OpenTheory.readArticle Theory.standard "test/bool.art"
+       ref <- readFile "doc/bool.txt"
+       assert $ printArticle ths ref
+    do ref <- readFile "test/bool.int"
+       assert $ printInterpretation ref
+    do ref <- readFile "test/bool.thy"
+       assert $ printTheoryFile ref
     return ()

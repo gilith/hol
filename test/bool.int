@@ -1,0 +1,12 @@
+###############################################################################
+# Interpreting Boolean operator names into the OpenTheory standard namespace
+###############################################################################
+
+# Data
+
+# Data.Bool
+
+const "!" as "Data.Bool.!"
+const "/\\" as "Data.Bool./\\"
+const "==>" as "Data.Bool.==>"
+const "T" as "Data.Bool.T"
