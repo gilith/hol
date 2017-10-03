@@ -24,7 +24,7 @@ Use [cabal][] to run the test suite:
 Run
 ----
 
-Use hol-package contains an executable called hol-pkg, which is run as follows:
+The hol package contains an executable called hol-pkg, which is run as follows:
 
     Usage: hol-pkg INPUT
     where INPUT is one of the following forms:
@@ -33,7 +33,11 @@ Use hol-package contains an executable called hol-pkg, which is run as follows:
       NAME-VERSION : a specific version of an installed theory package
       NAME ...     : the latest version of a list of packages
 
-The hol-pkg program reads the INPUT to generate a set of theorems, which are pretty-printed to standard output together with the symbols they contain. For example, the command hol-pkg unit generates the following output:
+The hol-pkg program reads the INPUT to generate a set of theorems, which are pretty-printed to standard output together with the symbols they contain. For example,
+
+    hol-pkg unit
+
+generates the following output:
 
     3 type operators: (->) bool unit
     6 constants: (=) (!) (==>) (?) (?!) ()
