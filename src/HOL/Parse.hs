@@ -53,13 +53,19 @@ class Parsable a where
   fromString :: String -> Maybe a
   fromString = fromText . Text.pack
 
+  fromStringUnsafe :: String -> a
+  fromStringUnsafe s =
+      case fromString s of
+        Just a -> a
+        Nothing -> error $ "couldn't parse " ++ show s
+
   fromTextFile :: FilePath -> IO a
   fromTextFile file = do
-    bs <- ByteString.readFile file
-    let txt = Text.Encoding.decodeUtf8 bs
-    case Parsec.parse (parser <* Parsec.eof) file txt of
-      Left e -> error $ show e
-      Right a -> return a
+      bs <- ByteString.readFile file
+      let txt = Text.Encoding.decodeUtf8 bs
+      case Parsec.parse (parser <* Parsec.eof) file txt of
+        Left e -> error $ show e
+        Right a -> return a
 
 -------------------------------------------------------------------------------
 -- Integers

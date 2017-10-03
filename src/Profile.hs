@@ -11,18 +11,31 @@ module Main
   ( main )
 where
 
-import Data.Set (Set)
+import qualified System.Environment as Environment
 
-import qualified HOL.OpenTheory as OpenTheory
+import HOL.OpenTheory (readArticle,readPackages)
+import qualified HOL.OpenTheory.Interpret as Interpret
+import HOL.Parse
 import HOL.Print
+import HOL.Theory (Theory)
 import qualified HOL.Theory as Theory
-import HOL.Thm (Thm)
 
-base :: IO (Set Thm)
-base = OpenTheory.readArticle Theory.standard "base.art"
+profileReadArticle :: IO Theory
+profileReadArticle = do
+    ths <- readArticle Theory.standard Interpret.empty "base.art"
+    return $ Theory.fromThmSet ths
+
+profileReadPackages :: IO Theory
+profileReadPackages = do
+    ts <- readPackages [fromStringUnsafe "base"]
+    return $ Theory.unionList ts
 
 main :: IO ()
 main = do
-    ths <- base
-    putStrLn $ toString ths
+    args <- Environment.getArgs
+    thy <- case args of
+             [] -> profileReadArticle
+             ["package"] -> profileReadPackages
+             _ -> error $ "bad arguments: " ++ show args
+    putStrLn $ toString thy
     return ()

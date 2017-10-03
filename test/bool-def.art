@@ -1,7 +1,7 @@
 6
 version
-"F"
-"!"
+"Data.Bool.F"
+"Data.Bool.!"
 "p"
 "->"
 typeOp
@@ -63,7 +63,7 @@ ref
 var
 9
 def
-"T"
+"Data.Bool.T"
 6
 ref
 0
@@ -184,10 +184,10 @@ appTerm
 remove
 appTerm
 thm
-"~"
+"Data.Bool.~"
 13
 ref
-"==>"
+"Data.Bool.==>"
 13
 ref
 "q"
@@ -198,7 +198,7 @@ var
 def
 27
 ref
-"/\\"
+"Data.Bool./\\"
 13
 ref
 29
@@ -418,7 +418,7 @@ appTerm
 remove
 appTerm
 thm
-"?"
+"Data.Bool.?"
 5
 ref
 22
@@ -482,7 +482,7 @@ appTerm
 remove
 appTerm
 thm
-"\\/"
+"Data.Bool.\\/"
 13
 remove
 29
@@ -549,7 +549,7 @@ appTerm
 remove
 appTerm
 thm
-"?!"
+"Data.Bool.?!"
 5
 remove
 36
@@ -641,7 +641,7 @@ appTerm
 remove
 appTerm
 thm
-"cond"
+"Data.Bool.cond"
 "t"
 2
 ref

@@ -141,7 +141,9 @@ instance CanSubst Var where
       (ty',s') = basicSubst ty s
 
 -------------------------------------------------------------------------------
--- Composing type substitutions
+-- Composing type substitutions, should satisfy
+--
+-- |- subst (compose s1 s2) t == subst s2 (subst s1 t)
 -------------------------------------------------------------------------------
 
 compose :: TypeSubst -> TypeSubst -> TypeSubst

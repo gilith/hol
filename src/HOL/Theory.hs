@@ -15,10 +15,13 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Text.PrettyPrint ((<>),(<+>),($+$))
+import qualified Text.PrettyPrint as PP
 
 import qualified HOL.Const as Const
 import HOL.Data
 import HOL.Name
+import HOL.Print
 import HOL.Sequent (Sequent)
 import HOL.Thm (Thm)
 import qualified HOL.Thm as Thm
@@ -111,6 +114,28 @@ thms = Set.fromList . Map.elems . thmMap
 
 lookupThm :: Theory -> Sequent -> Maybe Thm
 lookupThm thy sq = Map.lookup sq $ thmMap thy
+
+-------------------------------------------------------------------------------
+-- Printing
+-------------------------------------------------------------------------------
+
+instance Printable Theory where
+  toDoc thy =
+      pr "type operator" PP.fsep ts $+$
+      pr "constant" PP.fsep cs $+$
+      pr "theorem" PP.vcat ths
+    where
+      pr k j xs =
+          if n == 0 then PP.text "no" <+> ks
+          else PP.hang (PP.integer n <+> ks <> PP.text ":") 2 xd
+        where
+          xd = j (map toDoc (Set.toList xs))
+          n = toInteger (Set.size xs)
+          ks = PP.text k <> (if n == 1 then PP.empty else PP.text "s")
+
+      ts = TypeOp.ops thy
+      cs = Const.consts thy
+      ths = thms thy
 
 -------------------------------------------------------------------------------
 -- A minimal theory containing the standard axioms

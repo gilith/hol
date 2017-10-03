@@ -21,6 +21,29 @@ Use [cabal][] to run the test suite:
 
     cabal test
 
+Run
+----
+
+Use hol-package contains an executable called hol-pkg, which is run as follows:
+
+    Usage: hol-pkg INPUT
+    where INPUT is one of the following forms:
+      FILE.art     : a proof article file
+      FILE.thy     : a theory package file
+      NAME-VERSION : a specific version of an installed theory package
+      NAME ...     : the latest version of a list of packages
+
+The hol-pkg program reads the INPUT to generate a set of theorems, which are pretty-printed to standard output together with the symbols they contain. For example, the command hol-pkg unit generates the following output:
+
+    3 type operators: (->) bool unit
+    6 constants: (=) (!) (==>) (?) (?!) ()
+    5 theorems:
+      |- !v. v = ()
+      |- !f g. f = g
+      |- !e. ?fn. fn () = e
+      |- !e. ?!fn. fn () = e
+      |- !p. p () ==> !x. p x
+
 Profile
 -------
 
