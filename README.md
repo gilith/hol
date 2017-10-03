@@ -31,13 +31,13 @@ The hol package contains an executable called hol-pkg, which is run as follows:
       FILE.art     : a proof article file
       FILE.thy     : a theory package file
       NAME-VERSION : a specific version of an installed theory package
-      NAME ...     : the latest version of a list of packages
+      NAME ...     : the latest installed version of a list of packages
 
 The hol-pkg program reads the INPUT to generate a set of theorems, which are pretty-printed to standard output together with the symbols they contain. For example,
 
     hol-pkg unit
 
-generates the following output:
+reads the latest installed version of the unit theory package to generate a set of 5 theorems, resulting in the following output:
 
     3 type operators: (->) bool unit
     6 constants: (=) (!) (==>) (?) (?!) ()

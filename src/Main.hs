@@ -90,13 +90,14 @@ usage err =
       "  FILE.art     : a proof article file\n" ++
       "  FILE.thy     : a theory package file\n" ++
       "  NAME-VERSION : a specific version of an installed theory package\n" ++
-      "  NAME ...     : the latest version of a list of packages\n" ++
+      "  NAME ...     : the latest installed version of a list of packages\n" ++
       "hol-pkg reads the INPUT to generate a set of theorems, which are\n" ++
       "pretty-printed to standard output together with the symbols they contain."
 
 main :: IO ()
 main = do
     args <- Environment.getArgs
+    if null args then usage "no arguments" else return ()
     thy <- case articleArg args of
              Just f -> articleThy f
              Nothing ->
