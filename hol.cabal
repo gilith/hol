@@ -61,7 +61,6 @@ executable hol-pkg
     parsec >= 3.1 && < 3.2,
     pretty >= 1.1 && < 1.2,
     process >= 1.2 && < 1.3,
-    QuickCheck >= 2.4 && < 2.5,
     text >= 0.11 && < 0.12,
     transformers >= 0.3 && < 0.4
   hs-source-dirs: src
