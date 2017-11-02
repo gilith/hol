@@ -29,6 +29,7 @@ Library
   ghc-prof-options: -fprof-auto-top
   exposed-modules:
     HOL.Const
+    HOL.Conv
     HOL.Data
     HOL.Name
     HOL.OpenTheory
@@ -50,6 +51,7 @@ Library
     HOL.TypeOp
     HOL.TypeSubst
     HOL.TypeVar
+    HOL.Util
     HOL.Var
 
 executable hol-pkg

@@ -21,6 +21,7 @@ import HOL.Data
 import qualified HOL.TermData as TermData
 import qualified HOL.Type as Type
 import qualified HOL.TypeVar as TypeVar
+import HOL.Util
 import qualified HOL.Var as Var
 
 -------------------------------------------------------------------------------
@@ -77,10 +78,7 @@ mkApp :: Term -> Term -> Maybe Term
 mkApp f x = fmap mk $ TermData.mkApp f x
 
 mkAppUnsafe :: Term -> Term -> Term
-mkAppUnsafe f x =
-    case mkApp f x of
-      Just tm -> tm
-      Nothing -> error "HOL.Term.mkApp failed"
+mkAppUnsafe = mkUnsafe2 "HOL.Term.mkApp" mkApp
 
 destApp :: Term -> Maybe (Term,Term)
 destApp = TermData.destApp . dest
@@ -106,10 +104,7 @@ listMkApp f (x : xs) = do
     listMkApp fx xs
 
 listMkAppUnsafe :: Term -> [Term] -> Term
-listMkAppUnsafe f xs =
-    case listMkApp f xs of
-      Just tm -> tm
-      Nothing -> error "HOL.Term.listMkApp failed"
+listMkAppUnsafe = mkUnsafe2 "HOL.Term.listMkApp" listMkApp
 
 stripApp :: Term -> (Term,[Term])
 stripApp =
@@ -236,10 +231,7 @@ mkEq :: Term -> Term -> Maybe Term
 mkEq l r = listMkApp c [l,r] where c = mkEqConst (typeOf l)
 
 mkEqUnsafe :: Term -> Term -> Term
-mkEqUnsafe l r =
-    case mkEq l r of
-      Just tm -> tm
-      Nothing -> error "HOL.Term.mkEq failed"
+mkEqUnsafe = mkUnsafe2 "HOL.Term.mkEq" mkEq
 
 destEq :: Term -> Maybe (Term,Term)
 destEq tm = do
@@ -255,6 +247,9 @@ lhs = fmap fst . destEq
 
 rhs :: Term -> Maybe Term
 rhs = fmap snd . destEq
+
+rhsUnsafe :: Term -> Term
+rhsUnsafe = mkUnsafe1 "HOL.Term.rhs" rhs
 
 mkRefl :: Term -> Term
 mkRefl tm = mkEqUnsafe tm tm

@@ -23,6 +23,7 @@ import HOL.Data
 import qualified HOL.Term as Term
 import HOL.TypeSubst (TypeSubst)
 import qualified HOL.TypeSubst as TypeSubst
+import HOL.Util (mkUnsafe2)
 import qualified HOL.Var as Var
 
 -------------------------------------------------------------------------------
@@ -43,10 +44,7 @@ mk ts m = do
     norm v tm = not $ Term.eqVar v tm
 
 mkUnsafe :: TypeSubst -> Map Var Term -> Subst
-mkUnsafe ts m =
-    case mk ts m of
-      Just s -> s
-      Nothing -> error "HOL.Subst.mk failed"
+mkUnsafe = mkUnsafe2 "HOL.Subst.mk" mk
 
 dest :: Subst -> (TypeSubst, Map Var Term)
 dest (Subst ts m _) = (ts,m)
@@ -55,10 +53,7 @@ fromList :: [(TypeVar,Type)] -> [(Var,Term)] -> Maybe Subst
 fromList ts = mk (TypeSubst.fromList ts) . Map.fromList
 
 fromListUnsafe :: [(TypeVar,Type)] -> [(Var,Term)] -> Subst
-fromListUnsafe ts l =
-    case fromList ts l of
-      Just s -> s
-      Nothing -> error "HOL.Subst.fromList failed"
+fromListUnsafe = mkUnsafe2 "HOL.Subst.fromList" fromList
 
 empty :: Subst
 empty = Subst TypeSubst.empty Map.empty Map.empty
@@ -67,10 +62,7 @@ singleton :: Var -> Term -> Maybe Subst
 singleton v tm = fromList [] [(v,tm)]
 
 singletonUnsafe :: Var -> Term -> Subst
-singletonUnsafe v tm =
-    case singleton v tm of
-      Just s -> s
-      Nothing -> error "HOL.Subst.singleton failed"
+singletonUnsafe = mkUnsafe2 "HOL.Subst.singleton" singleton
 
 null :: Subst -> Bool
 null (Subst ts m _) = TypeSubst.null ts && Map.null m

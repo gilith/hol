@@ -105,18 +105,17 @@ primitives = Set.fromList [bool,fun,ind]
 -- Standard type operators
 -------------------------------------------------------------------------------
 
--- Pairs
-
-pairNamespace :: Namespace
-pairNamespace = Namespace ["Data","Pair"]
+-- Products
 
 productName :: Name
 productName = Name pairNamespace "*"
 
--- Pairs
-
-sumNamespace :: Namespace
-sumNamespace = Namespace ["Data","Sum"]
+-- Sums
 
 sumName :: Name
 sumName = Name sumNamespace "+"
+
+-- Natural numbers
+
+naturalName :: Name
+naturalName = Name naturalNamespace "natural"

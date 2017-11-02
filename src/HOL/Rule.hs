@@ -24,6 +24,7 @@ import qualified HOL.Term as Term
 import qualified HOL.TermAlpha as TermAlpha
 import HOL.Thm (Thm)
 import qualified HOL.Thm as Thm
+import HOL.Util (mkUnsafe2)
 import qualified HOL.Var as Var
 
 -------------------------------------------------------------------------------
@@ -33,8 +34,14 @@ import qualified HOL.Var as Var
 rator :: Thm -> Term -> Maybe Thm
 rator th tm = Thm.mkApp th (Thm.refl tm)
 
+ratorUnsafe :: Thm -> Term -> Thm
+ratorUnsafe = mkUnsafe2 "HOL.Rule.rator" rator
+
 rand :: Term -> Thm -> Maybe Thm
 rand tm th = Thm.mkApp (Thm.refl tm) th
+
+randUnsafe :: Term -> Thm -> Thm
+randUnsafe = mkUnsafe2 "HOL.Rule.rand" rand
 
 -------------------------------------------------------------------------------
 -- Symmetry of equality
@@ -58,6 +65,9 @@ trans th1 th2 = do
     tm <- Term.rator $ TermAlpha.dest $ Thm.concl th1
     th3 <- rand tm th2
     Thm.eqMp th3 th1
+
+transUnsafe :: Thm -> Thm -> Thm
+transUnsafe = mkUnsafe2 "HOL.Rule.trans" trans
 
 -------------------------------------------------------------------------------
 -- Proving hypotheses

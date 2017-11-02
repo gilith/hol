@@ -69,3 +69,47 @@ variantAvoiding avoid n =
       where
         ni = Name ns bi
         bi = b ++ show i
+
+-------------------------------------------------------------------------------
+-- Standard namespaces
+-------------------------------------------------------------------------------
+
+-- Booleans
+
+boolNamespace :: Namespace
+boolNamespace = Namespace ["Data","Bool"]
+
+-- Lists
+
+listNamespace :: Namespace
+listNamespace = Namespace ["Data","List"]
+
+-- Products
+
+pairNamespace :: Namespace
+pairNamespace = Namespace ["Data","Pair"]
+
+-- Sums
+
+sumNamespace :: Namespace
+sumNamespace = Namespace ["Data","Sum"]
+
+-- Functions
+
+functionNamespace :: Namespace
+functionNamespace = Namespace ["Function"]
+
+-- Natural numbers
+
+naturalNamespace :: Namespace
+naturalNamespace = Namespace ["Number","Natural"]
+
+-- Real numbers
+
+realNamespace :: Namespace
+realNamespace = Namespace ["Number","Real"]
+
+-- Sets
+
+setNamespace :: Namespace
+setNamespace = Namespace ["Set"]

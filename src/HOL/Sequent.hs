@@ -21,6 +21,7 @@ import HOL.TermAlpha (TermAlpha)
 import qualified HOL.TermAlpha as TermAlpha
 import qualified HOL.TypeOp as TypeOp
 import qualified HOL.TypeVar as TypeVar
+import HOL.Util (mkUnsafe1,mkUnsafe2)
 import qualified HOL.Var as Var
 
 -------------------------------------------------------------------------------
@@ -45,10 +46,7 @@ mk h c =
     sq = Sequent {hyp = h, concl = c}
 
 mkUnsafe :: Set TermAlpha -> TermAlpha -> Sequent
-mkUnsafe h c =
-    case mk h c of
-      Just sq -> sq
-      Nothing -> error "HOL.Sequent.mk failed"
+mkUnsafe = mkUnsafe2 "HOL.Sequent.mk" mk
 
 dest :: Sequent -> (Set TermAlpha, TermAlpha)
 dest (Sequent {hyp = h, concl = c}) = (h,c)
@@ -60,10 +58,7 @@ mkNullHyp :: TermAlpha -> Maybe Sequent
 mkNullHyp = mk Set.empty
 
 mkNullHypUnsafe :: TermAlpha -> Sequent
-mkNullHypUnsafe c =
-    case mkNullHyp c of
-      Just sq -> sq
-      Nothing -> error "HOL.Sequent.mkNullHyp failed"
+mkNullHypUnsafe = mkUnsafe1 "HOL.Sequent.mkNullHyp" mkNullHyp
 
 -------------------------------------------------------------------------------
 -- Type variables

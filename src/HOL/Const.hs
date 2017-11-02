@@ -89,9 +89,6 @@ primitives = Set.fromList [eq,select]
 
 -- Booleans
 
-boolNamespace :: Namespace
-boolNamespace = Namespace ["Data","Bool"]
-
 condName :: Name
 condName = Name boolNamespace "cond"
 
@@ -118,27 +115,18 @@ negName = Name boolNamespace "~"
 
 -- Lists
 
-listNamespace :: Namespace
-listNamespace = Namespace ["Data","List"]
-
 appendName :: Name
 appendName = Name listNamespace "@"
 
 consName :: Name
 consName = Name listNamespace "::"
 
--- Pairs
-
-pairNamespace :: Namespace
-pairNamespace = Namespace ["Data","Pair"]
+-- Products
 
 pairName :: Name
 pairName = Name pairNamespace ","
 
 -- Functions
-
-functionNamespace :: Namespace
-functionNamespace = Namespace ["Function"]
 
 composeName :: Name
 composeName = Name functionNamespace "o"
@@ -147,9 +135,6 @@ funpowName :: Name
 funpowName = Name functionNamespace "^"
 
 -- Natural numbers
-
-naturalNamespace :: Namespace
-naturalNamespace = Namespace ["Number","Natural"]
 
 addName :: Name
 addName = Name naturalNamespace "+"
@@ -192,9 +177,6 @@ zeroName = Name naturalNamespace "zero"
 
 -- Real numbers
 
-realNamespace :: Namespace
-realNamespace = Namespace ["Number","Real"]
-
 addRealName :: Name
 addRealName = Name realNamespace "+"
 
@@ -226,9 +208,6 @@ subRealName :: Name
 subRealName = Name realNamespace "-"
 
 -- Sets
-
-setNamespace :: Namespace
-setNamespace = Namespace ["Set"]
 
 crossName :: Name
 crossName = Name setNamespace "cross"

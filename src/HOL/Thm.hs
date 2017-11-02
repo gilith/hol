@@ -23,7 +23,9 @@ module HOL.Thm (
   eqMp,
   hyp,
   mkAbs,
+  mkAbsUnsafe,
   mkApp,
+  mkAppUnsafe,
   nullHyp,
   refl,
   standardAxioms,
@@ -46,6 +48,7 @@ import qualified HOL.TermAlpha as TermAlpha
 import qualified HOL.Type as Type
 import qualified HOL.TypeOp as TypeOp
 import qualified HOL.TypeVar as TypeVar
+import HOL.Util (mkUnsafe2)
 import qualified HOL.Var as Var
 
 -------------------------------------------------------------------------------
@@ -235,6 +238,9 @@ mkAbs v (Thm sq) = do
   where
     (h,tu) = Sequent.dest sq
 
+mkAbsUnsafe :: Var -> Thm -> Thm
+mkAbsUnsafe = mkUnsafe2 "HOL.Thm.mkAbs" mkAbs
+
 -------------------------------------------------------------------------------
 --   A |- f = g    B |- x = y
 -- ---------------------------- mkApp
@@ -255,6 +261,9 @@ mkApp (Thm sq1) (Thm sq2) = do
     (h1,c1) = Sequent.dest sq1
     (h2,c2) = Sequent.dest sq2
     h = Set.union h1 h2
+
+mkAppUnsafe :: Thm -> Thm -> Thm
+mkAppUnsafe = mkUnsafe2 "HOL.Thm.mkApp" mkApp
 
 -------------------------------------------------------------------------------
 --
