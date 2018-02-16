@@ -36,21 +36,21 @@ newtype Conv = Conv (Term -> Maybe Result)
 apply :: Conv -> Term -> Maybe Result
 apply (Conv f) tm = f tm
 
-applyData :: Conv -> TermData -> Maybe Result
-applyData c (AppTerm f x) = do
-    f' <- apply c f
-    x' <- apply c x
+applyData :: Conv -> Conv -> Conv -> TermData -> Maybe Result
+applyData cf cx _ (AppTerm f x) = do
+    f' <- apply cf f
+    x' <- apply cx x
     case (f',x') of
       (Unchanged,Unchanged) -> return Unchanged
       (Unchanged, Changed x'') -> return $ Changed $ Rule.randUnsafe f x''
       (Changed f'', Unchanged) -> return $ Changed $ Rule.ratorUnsafe f'' x
       (Changed f'', Changed x'') -> return $ Changed $ Thm.mkAppUnsafe f'' x''
-applyData c (AbsTerm v b) = do
-    b' <- apply c b
+applyData _ _ cb (AbsTerm v b) = do
+    b' <- apply cb b
     case b' of
       Unchanged -> return Unchanged
       Changed b'' -> return $ Changed $ Thm.mkAbsUnsafe v b''
-applyData _ _ = Just Unchanged
+applyData _ _ _ _ = Just Unchanged
 
 applyTerm :: Conv -> Term -> Term
 applyTerm c tm =
@@ -104,7 +104,16 @@ repeat :: Conv -> Conv
 repeat c = try (c `thenc` HOL.Conv.repeat c)
 
 sub :: Conv -> Conv
-sub c = Conv (applyData c . Term.dest)
+sub c = Conv (applyData c c c . Term.dest)
+
+rator :: Conv -> Conv
+rator c = Conv (applyData c HOL.Conv.id HOL.Conv.id . Term.dest)
+
+rand :: Conv -> Conv
+rand c = Conv (applyData HOL.Conv.id c HOL.Conv.id . Term.dest)
+
+abs :: Conv -> Conv
+abs c = Conv (applyData HOL.Conv.id HOL.Conv.id c . Term.dest)
 
 -------------------------------------------------------------------------------
 -- Traversal strategies
@@ -112,3 +121,12 @@ sub c = Conv (applyData c . Term.dest)
 
 bottomUp :: Conv -> Conv
 bottomUp c = sub (bottomUp c) `thenc` try c
+
+-------------------------------------------------------------------------------
+-- Evaluating terms to weak head normal form
+-------------------------------------------------------------------------------
+
+eval :: Conv -> Conv
+eval c = whnf
+  where
+    whnf = rator whnf `thenc` try ((c `orelse` beta) `thenc` whnf)
