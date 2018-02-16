@@ -160,6 +160,16 @@ sameTypeVar :: Var -> Term -> Bool
 sameTypeVar v tm = Var.typeOf v == typeOf tm
 
 -------------------------------------------------------------------------------
+-- Free variables in terms
+-------------------------------------------------------------------------------
+
+freeInMultiple :: Var -> Term -> Bool
+freeInMultiple v = TermData.freeInMultiple v . dest
+
+freeInOnce :: Var -> Term -> Bool
+freeInOnce v tm = Var.freeIn v tm && not (freeInMultiple v tm)
+
+-------------------------------------------------------------------------------
 -- A total order on terms modulo alpha-equivalence
 -------------------------------------------------------------------------------
 

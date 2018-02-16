@@ -122,3 +122,25 @@ typeOf (AbsTerm v b) =
     Type.mkFun (Var.typeOf v) bty
   where
     Term _ _ _ bty _ _ = b
+
+-------------------------------------------------------------------------------
+-- Free variables in terms
+-------------------------------------------------------------------------------
+
+freeInMultiple :: Var -> TermData -> Bool
+freeInMultiple v = go
+  where
+    go (ConstTerm _ _) = False
+    go (VarTerm _) = False
+    go (AppTerm f x) =
+        case (Var.freeIn v f, Var.freeIn v x) of
+          (True,True) -> True
+          (True,False) -> go fd
+          (False,True) -> go xd
+          (False,False) -> False
+      where
+        Term fd _ _ _ _ _ = f
+        Term xd _ _ _ _ _ = x
+    go (AbsTerm w b) = w /= v && go bd
+      where
+        Term bd _ _ _ _ _ = b

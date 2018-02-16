@@ -71,6 +71,18 @@ id = Conv (const $ Just Unchanged)
 beta :: Conv
 beta = Conv (fmap Changed . Thm.betaConv)
 
+betaSimp :: Conv
+betaSimp = cond p beta HOL.Conv.fail
+  where
+    p tm =
+        case Term.destApp tm of
+          Nothing -> False
+          Just (f,x) ->
+              Term.isVar x ||
+              case Term.destAbs f of
+                Nothing -> False
+                Just (v,b) -> not (Term.freeInMultiple v b)
+
 -------------------------------------------------------------------------------
 -- Conversionals
 -------------------------------------------------------------------------------
@@ -114,6 +126,11 @@ rand c = Conv (applyData HOL.Conv.id c HOL.Conv.id . Term.dest)
 
 abs :: Conv -> Conv
 abs c = Conv (applyData HOL.Conv.id HOL.Conv.id c . Term.dest)
+
+cond :: (Term -> Bool) -> Conv -> Conv -> Conv
+cond p c1 c2 = Conv f
+  where
+    f tm = apply (if p tm then c1 else c2) tm
 
 -------------------------------------------------------------------------------
 -- Traversal strategies
