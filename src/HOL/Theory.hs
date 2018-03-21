@@ -89,6 +89,12 @@ lookupTypeOp thy n =
       Nothing -> Just $ TypeOp.mkUndef n
       Just s -> if Set.size s == 1 then Just (Set.findMin s) else Nothing
 
+lookupTypeOpUnsafe :: Theory -> Name -> TypeOp
+lookupTypeOpUnsafe thy n =
+    case lookupTypeOp thy n of
+      Just t -> t
+      Nothing -> error $ "ambiguous type operator name " ++ show n
+
 -------------------------------------------------------------------------------
 -- Constants
 -------------------------------------------------------------------------------
@@ -101,6 +107,12 @@ lookupConst thy n =
     case Map.lookup n $ constMap thy of
       Nothing -> Just $ Const.mkUndef n
       Just s -> if Set.size s == 1 then Just (Set.findMin s) else Nothing
+
+lookupConstUnsafe :: Theory -> Name -> Const
+lookupConstUnsafe thy n =
+    case lookupConst thy n of
+      Just c -> c
+      Nothing -> error $ "ambiguous constant name " ++ show n
 
 -------------------------------------------------------------------------------
 -- Theorems

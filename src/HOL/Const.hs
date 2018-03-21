@@ -172,6 +172,9 @@ powerName = Name naturalNamespace "^"
 subName :: Name
 subName = Name naturalNamespace "-"
 
+sucName :: Name
+sucName = Name naturalNamespace "suc"
+
 zeroName :: Name
 zeroName = Name naturalNamespace "zero"
 

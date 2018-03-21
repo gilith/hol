@@ -13,11 +13,13 @@ where
 
 import Data.Maybe (isJust)
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import System.IO.Unsafe (unsafePerformIO)
 import System.Mem.StableName (makeStableName)
 
 import qualified HOL.Const as Const
 import HOL.Data
+import HOL.Name
 import qualified HOL.TermData as TermData
 import qualified HOL.Type as Type
 import qualified HOL.TypeVar as TypeVar
@@ -219,6 +221,39 @@ alphaCompare =
 
 alphaEqual :: Term -> Term -> Bool
 alphaEqual tm1 tm2 = alphaCompare tm1 tm2 == EQ
+
+-------------------------------------------------------------------------------
+-- Rename all bound variables to fresh names
+-------------------------------------------------------------------------------
+
+renameFresh :: Term -> Term
+renameFresh = rename
+  where
+    rename tm = fst $ renameTerm bvs tm ns
+      where
+        bvs = Map.empty
+        ns = filter (flip Set.notMember avoid) freshSupply
+        avoid = Set.map Var.name $ Var.free tm
+
+    renameTerm bvs tm ns = renameData bvs (dest tm) ns
+
+    renameData _ (ConstTerm c ty) ns = (mkConst c ty, ns)
+    renameData bvs (VarTerm v) ns = (renameVar bvs v, ns)
+    renameData bvs (AppTerm f x) ns = (mkAppUnsafe f' x', ns'')
+      where
+        (f',ns') = renameTerm bvs f ns
+        (x',ns'') = renameTerm bvs x ns'
+    renameData bvs (AbsTerm v b) ns = (mkAbs v' b', ns'')
+      where
+        (v',ns') = case ns of
+                     [] -> error "exhausted supply"
+                     n : l -> (Var.mk n (Var.typeOf v), l)
+        bvs' = Map.insert v (mkVar v') bvs
+        (b',ns'') = renameTerm bvs' b ns'
+
+    renameVar bvs v = case Map.lookup v bvs of
+                        Just tm -> tm
+                        Nothing -> mkVar v
 
 -------------------------------------------------------------------------------
 -- Primitive constants

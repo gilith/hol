@@ -70,6 +70,12 @@ variantAvoiding avoid n =
         ni = Name ns bi
         bi = b ++ show i
 
+freshSupply :: [Name]
+freshSupply = map mkGlobal (stem ++ concat (map add [(0 :: Int) ..]))
+  where
+    add n = map (++ show n) stem
+    stem = map (: []) "abcdefghijklmnpqrstuvwxyz"
+
 -------------------------------------------------------------------------------
 -- Standard namespaces
 -------------------------------------------------------------------------------
