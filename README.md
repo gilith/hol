@@ -85,7 +85,7 @@ Alternatively the memory allocation profile can be viewed as a graph:
     xpdf hol-profile.pdf
 
 [cabal]: https://www.haskell.org/cabal/ "Cabal"
-[Haskell]: https://www.haskell.org/
+[Haskell]: https://www.haskell.org/ "Haskell"
 [hol package]: https://hackage.haskell.org/package/hol "hol package"
 [MIT License]: https://github.com/gilith/hol/blob/master/LICENSE "MIT License"
 [OpenTheory]: http://www.gilith.com/research/opentheory/ "The OpenTheory project home page"

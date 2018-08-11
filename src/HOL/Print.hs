@@ -155,6 +155,9 @@ instance Printable PP.Doc where
 instance Printable Integer where
   toDoc = PP.integer
 
+instance (Printable a, Printable b) => Printable (a,b) where
+  toDoc (x,y) = PP.parens (toDoc x <> PP.comma <+> toDoc y)
+
 instance Printable a => Printable [a] where
   toDoc = PP.brackets . PP.fsep . PP.punctuate PP.comma . map toDoc
 
