@@ -89,9 +89,10 @@ data Assoc =
 
 type InfixOp = (Prec, Assoc, PP.Doc -> PP.Doc)
 
-ppInfixOps :: (a -> Maybe (InfixOp,a,a)) -> (Bool -> a -> PP.Doc) -> a -> PP.Doc
+ppInfixOps :: (a -> Maybe (InfixOp,a,a)) -> (Bool -> a -> PP.Doc) ->
+              Bool -> a -> PP.Doc
 ppInfixOps dest pp =
-    go Nothing True
+    go Nothing
   where
     go mprec rightmost a =
         case dest a of
@@ -217,7 +218,7 @@ instance Printable Type where
                  OpType t [x] -> basic False x <+> toDoc t
                  OpType t xs -> normals xs <+> toDoc t
 
-      normal = ppInfixOps destInfix basic
+      normal = ppInfixOps destInfix basic True
 
       normals = PP.parens . PP.fsep . PP.punctuate PP.comma . map normal
 
@@ -325,19 +326,21 @@ instance Printable Term where
             ([],_) -> binder rightmost tm
             (ns,t) -> ppPrefixOps ns $ binder rightmost t
 
-      letterm rightmost tm =
-          case stripLet tm of
-            ([],_) -> negation rightmost tm
-            (ves,t) -> if not rightmost then parens tm
-                       else ppLet application normal ves t
+      infixTerm = ppInfixOps destInfix negation
 
       conditional rightmost tm =
           case stripCond tm of
-            ([],_) -> letterm rightmost tm
-            ((c,t) : cts, e) -> if not rightmost then parens tm
-                                else ppCond normal c t cts e
+            ([],_) -> infixTerm rightmost tm
+            ((c,t) : cts, e) -> ppCond (infixTerm False)
+                                  (infixTerm rightmost) c t cts e
 
-      normal = ppInfixOps destInfix conditional
+      letTerm rightmost tm =
+          case stripLet tm of
+            ([],_) -> conditional rightmost tm
+            (ves,t) -> ppLet application (conditional False)
+                         (conditional rightmost) ves t
+
+      normal = letTerm True
 
       parens = PP.parens . normal
 
@@ -616,9 +619,9 @@ instance Printable Term where
             Just (c,t,u) -> ((c,t) : cts, e) where (cts,e) = stripCond u
             Nothing -> ([],tm)
 
-      ppCond :: (Term -> PP.Doc) -> Term -> Term -> [(Term,Term)] -> Term ->
-                PP.Doc
-      ppCond pp =
+      ppCond :: (Term -> PP.Doc) -> (Term -> PP.Doc) ->
+                Term -> Term -> [(Term,Term)] -> Term -> PP.Doc
+      ppCond pp ppe =
           \c t cts e ->
             PP.sep (ifThen c t : map elseIfThen cts ++ [elseBranch e])
         where
@@ -629,7 +632,7 @@ instance Printable Term where
               PP.text "else" <+> PP.sep [PP.text "if" <+> pp c,
                                          PP.text "then" <+> pp t]
 
-          elseBranch e = PP.text "else" <+> pp e
+          elseBranch e = PP.text "else" <+> ppe e
 
       -------------------------------------------------------------------------
       -- Lets
@@ -650,15 +653,15 @@ instance Printable Term where
             Just (v,e,u) -> ((v,e) : ves, t) where (ves,t) = stripLet u
             Nothing -> ([],tm)
 
-      ppLet :: (Term -> PP.Doc) -> (Term -> PP.Doc) ->
+      ppLet :: (Term -> PP.Doc) -> (Term -> PP.Doc) -> (Term -> PP.Doc) ->
                [(Term,Term)] -> Term -> PP.Doc
-      ppLet ppv pp =
+      ppLet ppv ppe pp =
           \ves t ->
             PP.sep (map letBind ves ++ [pp t])
         where
           letBind (v,e) =
               PP.text "let" <+> PP.sep [ppv v <+> PP.text "<-",
-                                        pp e <+> PP.text "in"]
+                                        ppe e <+> PP.text "in"]
 
       -------------------------------------------------------------------------
       -- Numerals
