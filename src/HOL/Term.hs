@@ -12,7 +12,7 @@ module HOL.Term
 where
 
 import Data.Maybe (isJust)
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import System.IO.Unsafe (unsafePerformIO)
 import System.Mem.StableName (makeStableName)

@@ -12,7 +12,7 @@ Installing the hol package requires [cabal][]:
 
     git clone https://github.com/gilith/hol.git
     cd hol
-    cabal install
+    cabal install --enable-tests
 
 Test
 ----

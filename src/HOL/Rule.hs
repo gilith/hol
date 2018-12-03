@@ -12,7 +12,7 @@ module HOL.Rule
 where
 
 import Control.Monad (foldM,guard)
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 import HOL.Data

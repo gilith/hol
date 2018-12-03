@@ -12,8 +12,8 @@ module HOL.OpenTheory.Interpret
 where
 
 import Control.Monad (guard)
-import Data.Map (Map)
-import qualified Data.Map as Map
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 import Data.Maybe (mapMaybe)
 import Text.Parsec ((<|>))
 import qualified Text.Parsec as Parsec
