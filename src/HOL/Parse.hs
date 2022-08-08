@@ -11,7 +11,6 @@ portability: portable
 module HOL.Parse
 where
 
-import Control.Applicative ((<*))
 import qualified Data.ByteString.Lazy as ByteString
 import qualified Data.Char as Char
 import qualified Data.List as List

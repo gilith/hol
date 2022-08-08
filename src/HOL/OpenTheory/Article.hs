@@ -20,6 +20,7 @@ import qualified Data.Set as Set
 import Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as Text
 import qualified Data.Text.Lazy.Encoding as Text.Encoding
+import Prelude hiding ((<>))
 import Text.Parsec.Text.Lazy ()
 import Text.PrettyPrint ((<>),(<+>),($+$))
 import qualified Text.PrettyPrint as PP

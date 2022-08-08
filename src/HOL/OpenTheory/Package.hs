@@ -18,6 +18,7 @@ import qualified Data.Char as Char
 import qualified Data.List as List
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Prelude hiding ((<>))
 import System.FilePath ((</>),(<.>),takeDirectory)
 import qualified System.Process
 import Text.Parsec ((<|>))

@@ -15,6 +15,7 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Prelude hiding ((<>))
 import Text.PrettyPrint ((<>),(<+>),($+$))
 import qualified Text.PrettyPrint as PP
 
