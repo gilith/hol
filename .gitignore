@@ -1,6 +1,8 @@
 /.cabal-sandbox
+/cabal.project.local*
 /cabal.sandbox.config
 /dist
+/dist-newstyle
 /hol-profile.aux
 /hol-profile.hp
 /hol-profile.pdf
