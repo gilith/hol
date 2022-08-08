@@ -4,7 +4,7 @@ category: Logic
 synopsis: Higher order logic
 license: MIT
 license-file: LICENSE
-cabal-version: >= 1.8.0.2
+cabal-version: >= 1.10
 build-type: Simple
 extra-source-files: README.md doc/axioms.txt doc/bool.txt test/bool.art test/bool.int test/bool.thy test/bool-def.art
 extra-tmp-files: hol-profile.aux hol-profile.hp hol-profile.pdf hol-profile.prof hol-profile.ps
