@@ -15,6 +15,7 @@ import qualified Data.Foldable as Foldable
 import Data.Maybe (isNothing,fromMaybe)
 import Data.Set (Set)
 import qualified Data.Set as Set
+
 import qualified HOL.Const as Const
 import qualified HOL.Subst as Subst
 import HOL.TermAlpha (TermAlpha)

@@ -104,6 +104,9 @@ existsName = Name boolNamespace "?"
 existsUniqueName :: Name
 existsUniqueName = Name boolNamespace "?!"
 
+falseName :: Name
+falseName = Name boolNamespace "F"
+
 forallName :: Name
 forallName = Name boolNamespace "!"
 
@@ -112,6 +115,9 @@ impName = Name boolNamespace "==>"
 
 negName :: Name
 negName = Name boolNamespace "~"
+
+trueName :: Name
+trueName = Name boolNamespace "T"
 
 -- Lists
 

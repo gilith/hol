@@ -41,11 +41,13 @@ Library
     HOL.Rule
     HOL.Sequent
     HOL.Subst
+    HOL.Syntax
     HOL.Term
     HOL.TermAlpha
     HOL.TermData
     HOL.Theory
     HOL.Thm
+    HOL.Tptp
     HOL.Type
     HOL.TypeData
     HOL.TypeOp
@@ -83,11 +85,13 @@ executable hol-pkg
     HOL.Rule
     HOL.Sequent
     HOL.Subst
+    HOL.Syntax
     HOL.Term
     HOL.TermAlpha
     HOL.TermData
     HOL.Theory
     HOL.Thm
+    HOL.Tptp
     HOL.Type
     HOL.TypeData
     HOL.TypeOp
@@ -127,11 +131,13 @@ test-suite hol-test
     HOL.Rule
     HOL.Sequent
     HOL.Subst
+    HOL.Syntax
     HOL.Term
     HOL.TermAlpha
     HOL.TermData
     HOL.Theory
     HOL.Thm
+    HOL.Tptp
     HOL.Type
     HOL.TypeData
     HOL.TypeOp
@@ -178,6 +184,7 @@ benchmark hol-profile
     HOL.TermData
     HOL.Theory
     HOL.Thm
+    HOL.Tptp
     HOL.Type
     HOL.TypeData
     HOL.TypeOp
