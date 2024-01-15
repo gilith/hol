@@ -172,6 +172,28 @@ freeInOnce :: Var -> Term -> Bool
 freeInOnce v tm = Var.freeIn v tm && not (freeInMultiple v tm)
 
 -------------------------------------------------------------------------------
+-- Operators of a given arity
+-------------------------------------------------------------------------------
+
+destUnaryOp :: Term -> Maybe (Const,Term)
+destUnaryOp tm = do
+    (t,x) <- destApp tm
+    (c,_) <- destConst t
+    return (c,x)
+
+destBinaryOp :: Term -> Maybe (Const,Term,Term)
+destBinaryOp tm = do
+    (t,y) <- destApp tm
+    (c,x) <- destUnaryOp t
+    return (c,x,y)
+
+destTernaryOp :: Term -> Maybe (Const,Term,Term,Term)
+destTernaryOp tm = do
+    (t,z) <- destApp tm
+    (c,x,y) <- destBinaryOp t
+    return (c,x,y,z)
+
+-------------------------------------------------------------------------------
 -- A total order on terms modulo alpha-equivalence
 -------------------------------------------------------------------------------
 

@@ -17,6 +17,8 @@ import qualified Data.Maybe as Maybe
 import Data.Set (Set)
 import qualified Data.Set as Set
 
+import HOL.Util (mkUnsafe1)
+
 -------------------------------------------------------------------------------
 -- Namespaces
 -------------------------------------------------------------------------------
@@ -37,17 +39,27 @@ data Name =
 -- The global namespace (contains all type and term variable names)
 -------------------------------------------------------------------------------
 
-global :: Namespace
-global = Namespace []
+globalNamespace :: Namespace
+globalNamespace = Namespace []
+
+isGlobalNamespace :: Namespace -> Bool
+isGlobalNamespace ns = ns == globalNamespace
 
 mkGlobal :: String -> Name
-mkGlobal = Name global
+mkGlobal = Name globalNamespace
 
 destGlobal :: Name -> Maybe String
-destGlobal (Name ns s) = if ns == global then Just s else Nothing
+destGlobal (Name ns s) = if isGlobalNamespace ns then Just s else Nothing
+
+destGlobalUnsafe :: Name -> String
+destGlobalUnsafe = mkUnsafe1 "HOL.Name.destGlobal" destGlobal
 
 isGlobal :: Name -> Bool
 isGlobal = Maybe.isJust . destGlobal
+
+mapGlobal :: (String -> String) -> Name -> Name
+mapGlobal f (Name ns s) | isGlobalNamespace ns = Name ns (f s)
+mapGlobal _ n = n
 
 -------------------------------------------------------------------------------
 -- Fresh names

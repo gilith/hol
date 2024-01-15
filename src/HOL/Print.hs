@@ -411,28 +411,6 @@ instance Printable Term where
           [(Const.negName, Nothing)]
 
       -------------------------------------------------------------------------
-      -- Operators of a given arity
-      -------------------------------------------------------------------------
-
-      destUnaryOp :: Term -> Maybe (Const,Term)
-      destUnaryOp tm = do
-          (t,x) <- Term.destApp tm
-          (c,_) <- Term.destConst t
-          return (c,x)
-
-      destBinaryOp :: Term -> Maybe (Const,Term,Term)
-      destBinaryOp tm = do
-          (t,y) <- Term.destApp tm
-          (c,x) <- destUnaryOp t
-          return (c,x,y)
-
-      destTernaryOp :: Term -> Maybe (Const,Term,Term,Term)
-      destTernaryOp tm = do
-          (t,z) <- Term.destApp tm
-          (c,x,y) <- destBinaryOp t
-          return (c,x,y,z)
-
-      -------------------------------------------------------------------------
       -- Infix operators
       -------------------------------------------------------------------------
 
@@ -461,7 +439,7 @@ instance Printable Term where
 
       destInfix :: Term -> Maybe (InfixOp,Term,Term)
       destInfix tm = do
-          (c,x,y) <- destBinaryOp tm
+          (c,x,y) <- Term.destBinaryOp tm
           i <- lookupOp (Term.typeOf x) (Const.name c)
           return (i,x,y)
         where
@@ -492,7 +470,7 @@ instance Printable Term where
 
       destForall :: Term -> Maybe (Var,Term)
       destForall tm = do
-          (c,t) <- destUnaryOp tm
+          (c,t) <- Term.destUnaryOp tm
           (v,b) <- Term.destAbs t
           guard (Const.name c == Const.forallName)
           return (v,b)
@@ -541,7 +519,7 @@ instance Printable Term where
 
       destQuantifier :: Term -> Maybe (Const,Term,Term)
       destQuantifier tm = do
-          (c,vb) <- destUnaryOp tm
+          (c,vb) <- Term.destUnaryOp tm
           (v,b) <- destAbs vb
           return (c,v,b)
 
@@ -588,7 +566,7 @@ instance Printable Term where
 
       destNegation :: Term -> Maybe (PrefixOp,Term)
       destNegation tm = do
-          (c,t) <- destUnaryOp tm
+          (c,t) <- Term.destUnaryOp tm
           p <- Map.lookup (Const.name c) negations
           return (p,t)
 
@@ -607,7 +585,7 @@ instance Printable Term where
 
       destCond :: Term -> Maybe (Term,Term,Term)
       destCond tm = do
-          (c,x,y,z) <- destTernaryOp tm
+          (c,x,y,z) <- Term.destTernaryOp tm
           guard (Const.name c == Const.condName)
           return (x,y,z)
 
@@ -674,7 +652,7 @@ instance Printable Term where
 
       destFromNatural :: Term -> Maybe Term
       destFromNatural tm = do
-          (c,t) <- destUnaryOp tm
+          (c,t) <- Term.destUnaryOp tm
           guard (Set.member (Const.name c) fromNaturals)
           return t
 
@@ -692,7 +670,7 @@ instance Printable Term where
 
       destBit :: Term -> Maybe (Bool,Term)
       destBit tm = do
-          (c,t) <- destUnaryOp tm
+          (c,t) <- Term.destUnaryOp tm
           fmap (flip (,) t) $ bit (Const.name c)
         where
           bit n = if n == Const.bit0Name then Just False
@@ -722,7 +700,7 @@ instance Printable Term where
 
       destPair :: Term -> Maybe (Term,Term)
       destPair tm = do
-          (c,x,y) <- destBinaryOp tm
+          (c,x,y) <- Term.destBinaryOp tm
           guard (Const.name c == Const.pairName)
           return (x,y)
 
@@ -744,19 +722,19 @@ instance Printable Term where
 
       destFromPredicate :: Term -> Maybe Term
       destFromPredicate tm = do
-          (c,t) <- destUnaryOp tm
+          (c,t) <- Term.destUnaryOp tm
           guard (Const.name c == Const.fromPredicateName)
           return t
 
       destConj :: Term -> Maybe (Term,Term)
       destConj tm = do
-          (c,x,y) <- destBinaryOp tm
+          (c,x,y) <- Term.destBinaryOp tm
           guard (Const.name c == Const.conjName)
           return (x,y)
 
       destExists :: Term -> Maybe (Var,Term)
       destExists tm = do
-          (c,t) <- destUnaryOp tm
+          (c,t) <- Term.destUnaryOp tm
           (v,b) <- Term.destAbs t
           guard (Const.name c == Const.existsName)
           return (v,b)

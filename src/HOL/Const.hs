@@ -154,6 +154,9 @@ bit1Name = Name naturalNamespace "bit1"
 divName :: Name
 divName = Name naturalNamespace "div"
 
+dividesName :: Name
+dividesName = Name naturalNamespace "divides"
+
 geName :: Name
 geName = Name naturalNamespace ">="
 

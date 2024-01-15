@@ -59,6 +59,32 @@ data Formula =
        bodyFormula :: Term}
   deriving (Eq,Ord,Show)
 
+-------------------------------------------------------------------------------
+-- Formula construction
+-------------------------------------------------------------------------------
+
+mkFormula :: Role -> String -> Int -> Term -> Formula
+mkFormula r p i t =
+    Formula {nameFormula = p ++ show i,
+             roleFormula = r,
+             bodyFormula = t}
+
+mkFormulas :: Role -> String -> [Term] -> [Formula]
+mkFormulas r p = zipWith (mkFormula r p) [0..]
+
+mkTheorems :: String -> [Term] -> [Formula]
+mkTheorems = mkFormulas TheoremRole
+
+mkConjecture :: String -> Term -> Formula
+mkConjecture n t =
+    Formula {nameFormula = n,
+             roleFormula = ConjectureRole,
+             bodyFormula = t}
+
+-------------------------------------------------------------------------------
+-- Formula printing
+-------------------------------------------------------------------------------
+
 instance Printable Formula where
   toDoc fm =
       PP.text "fof" <>
@@ -128,22 +154,6 @@ instance Printable Formula where
           [(Const.negName, Nothing)]
 
       -------------------------------------------------------------------------
-      -- Operators of a given arity
-      -------------------------------------------------------------------------
-
-      destUnaryOp :: Term -> Maybe (Const,Term)
-      destUnaryOp tm = do
-          (t,x) <- Term.destApp tm
-          (c,_) <- Term.destConst t
-          return (c,x)
-
-      destBinaryOp :: Term -> Maybe (Const,Term,Term)
-      destBinaryOp tm = do
-          (t,y) <- Term.destApp tm
-          (c,x) <- destUnaryOp t
-          return (c,x,y)
-
-      -------------------------------------------------------------------------
       -- Constants
       -------------------------------------------------------------------------
 
@@ -187,7 +197,7 @@ instance Printable Formula where
 
       destInfix :: Term -> Maybe (InfixOp,Term,Term)
       destInfix tm = do
-          (c,x,y) <- destBinaryOp tm
+          (c,x,y) <- Term.destBinaryOp tm
           i <- lookupOp (Term.typeOf x) (Const.name c)
           return (i,x,y)
         where
@@ -219,7 +229,7 @@ instance Printable Formula where
 
       destQuantifier :: Term -> Maybe (Const,Term,Term)
       destQuantifier tm = do
-          (c,vb) <- destUnaryOp tm
+          (c,vb) <- Term.destUnaryOp tm
           (v,b) <- Term.destAbs vb
           return (c, Term.mkVar v, b)
 
@@ -260,7 +270,7 @@ instance Printable Formula where
 
       destNegation :: Term -> Maybe (PrefixOp,Term)
       destNegation tm = do
-          (c,t) <- destUnaryOp tm
+          (c,t) <- Term.destUnaryOp tm
           p <- Map.lookup (Const.name c) negations
           return (p,t)
 
@@ -283,7 +293,7 @@ instance Printable Formula where
 
       destFromNatural :: Term -> Maybe Term
       destFromNatural tm = do
-          (c,t) <- destUnaryOp tm
+          (c,t) <- Term.destUnaryOp tm
           guard (Set.member (Const.name c) fromNaturals)
           return t
 
@@ -301,7 +311,7 @@ instance Printable Formula where
 
       destBit :: Term -> Maybe (Bool,Term)
       destBit tm = do
-          (c,t) <- destUnaryOp tm
+          (c,t) <- Term.destUnaryOp tm
           fmap (flip (,) t) $ bit (Const.name c)
         where
           bit n = if n == Const.bit0Name then Just False
