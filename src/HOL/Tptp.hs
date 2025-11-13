@@ -91,7 +91,7 @@ instance Printable Formula where
       PP.lparen <>
       PP.fsep (commas [PP.text (nameFormula fm),
                        toDoc (roleFormula fm),
-                       normal (bodyFormula fm)]) <+>
+                       parens (bodyFormula fm)]) <+>
       PP.rparen <>
       PP.char '.'
     where
@@ -140,9 +140,9 @@ instance Printable Formula where
 
       infixTable :: [(Name, Prec, Assoc, Maybe String)]
       infixTable =
-          [(Const.conjName, -1, RightAssoc, Nothing),
-           (Const.disjName, -1, RightAssoc, Nothing),
-           (Const.impName, -3, NonAssoc, Just "=>")]
+          [(Const.conjName, -1, NonAssoc, Just "&"),
+           (Const.disjName, -1, NonAssoc, Just "|"),
+           (Const.impName, -1, NonAssoc, Just "=>")]
 
       quantifierTable :: [(Name, Maybe String)]
       quantifierTable =
@@ -190,7 +190,7 @@ instance Printable Formula where
       eqInfixOp = snd $ mkInfixOp (Const.eqName, 3, NonAssoc, Nothing)
 
       iffInfixOp :: InfixOp
-      iffInfixOp = snd $ mkInfixOp (Const.eqName, -3, NonAssoc, Just "<=>")
+      iffInfixOp = snd $ mkInfixOp (Const.eqName, -1, NonAssoc, Just "<=>")
 
       infixOps :: Map Name InfixOp
       infixOps = Map.fromList $ map mkInfixOp infixTable

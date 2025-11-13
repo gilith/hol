@@ -66,6 +66,12 @@ trueTerm thy = do
 trueTermUnsafe :: Theory -> Term
 trueTermUnsafe = mkUnsafe1 "HOL.Syntax.trueTerm" trueTerm
 
+isTrueTerm :: Term -> Bool
+isTrueTerm tm = isJust $ do
+  (c,_) <- Term.destConst tm
+  guard (Const.name c == Const.trueName)
+  return $ Just ()
+
 -- Falsity
 
 falseConst :: Theory -> Maybe Const
@@ -78,6 +84,12 @@ falseTerm thy = do
 
 falseTermUnsafe :: Theory -> Term
 falseTermUnsafe = mkUnsafe1 "HOL.Syntax.falseTerm" falseTerm
+
+isFalseTerm :: Term -> Bool
+isFalseTerm tm = isJust $ do
+  (c,_) <- Term.destConst tm
+  guard (Const.name c == Const.falseName)
+  return $ Just ()
 
 -- Negation
 
