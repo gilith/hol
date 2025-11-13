@@ -24,7 +24,7 @@ import qualified HOL.Term as Term
 import qualified HOL.TermAlpha as TermAlpha
 import HOL.Thm (Thm)
 import qualified HOL.Thm as Thm
-import HOL.Util (mkUnsafe2)
+import HOL.Util (mkUnsafe1, mkUnsafe2, mkUnsafe5)
 import qualified HOL.Var as Var
 
 -------------------------------------------------------------------------------
@@ -55,6 +55,9 @@ sym th = do
     th1 <- rand e th
     th2 <- Thm.mkApp th1 th0
     Thm.eqMp th2 th0
+
+symUnsafe :: Thm -> Thm
+symUnsafe = mkUnsafe1 "HOL.Rule.sym" sym
 
 -------------------------------------------------------------------------------
 -- Transitivity of equality
@@ -178,3 +181,7 @@ defineTypeOpLegacy opName absName repName tyVarl existenceTh = do
         th5 <- Thm.mkApp th3 th4
         th6 <- Thm.eqMp th5 th1  -- ⊢ rep (abs r) = r <=> p r
         sym th6  -- ⊢ p r <=> rep (abs r) = r
+
+defineTypeOpLegacyUnsafe :: Name -> Name -> Name -> [TypeVar] -> Thm ->
+                            (TypeOp,Const,Const,Thm,Thm)
+defineTypeOpLegacyUnsafe = mkUnsafe5 "HOL.Rule.defineTypeOpLegacy" defineTypeOpLegacy

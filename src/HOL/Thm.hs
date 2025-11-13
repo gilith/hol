@@ -11,16 +11,21 @@ portability: portable
 module HOL.Thm (
   Thm,
   assume,
+  assumeUnsafe,
   axiomOfChoice,
   axiomOfExtensionality,
   axiomOfInfinity,
   betaConv,
+  betaConvUnsafe,
   concl,
   deductAntisym,
   defineConst,
+  defineConstUnsafe,
   defineTypeOp,
+  defineTypeOpUnsafe,
   dest,
   eqMp,
+  eqMpUnsafe,
   hyp,
   mkAbs,
   mkAbsUnsafe,
@@ -48,7 +53,7 @@ import qualified HOL.TermAlpha as TermAlpha
 import qualified HOL.Type as Type
 import qualified HOL.TypeOp as TypeOp
 import qualified HOL.TypeVar as TypeVar
-import HOL.Util (mkUnsafe2)
+import HOL.Util (mkUnsafe1, mkUnsafe2, mkUnsafe5)
 import qualified HOL.Var as Var
 
 -------------------------------------------------------------------------------
@@ -171,6 +176,9 @@ assume tm =
     c = TermAlpha.mk tm
     h = Set.singleton c
 
+assumeUnsafe :: Term -> Thm
+assumeUnsafe = mkUnsafe1 "HOL.Thm.assume" assume
+
 -------------------------------------------------------------------------------
 --
 -- ------------------------- betaConv ((\v. t) u)
@@ -184,6 +192,9 @@ betaConv tm = do
     let tm' = Subst.trySubst (Subst.singletonUnsafe v u) t
     let sq = Sequent.mkNullHypUnsafe $ TermAlpha.mk $ Term.mkEqUnsafe tm tm'
     return $ Thm sq
+
+betaConvUnsafe :: Term -> Thm
+betaConvUnsafe = mkUnsafe1 "HOL.Thm.betaConv" betaConv
 
 -------------------------------------------------------------------------------
 --         A |- t        B |- u
@@ -218,6 +229,9 @@ eqMp (Thm sq1) (Thm sq2) = do
     (h1,c1) = Sequent.dest sq1
     (h2,c2) = Sequent.dest sq2
     h = Set.union h1 h2
+
+eqMpUnsafe :: Thm -> Thm -> Thm
+eqMpUnsafe = mkUnsafe2 "HOL.Thm.eqMp" eqMp
 
 -------------------------------------------------------------------------------
 --        A |- t = u
@@ -308,6 +322,9 @@ defineConst name t = do
     ty = Term.typeOf t
     c = TermAlpha.mk $ Term.mkEqUnsafe (Term.mkConst nameC ty) t
 
+defineConstUnsafe :: Name -> Term -> (Const,Thm)
+defineConstUnsafe = mkUnsafe2 "HOL.Thm.defineConst" defineConst
+
 -------------------------------------------------------------------------------
 --             |- p t
 -- ---------------------------------------- defineTypeOp name abs rep tyVars
@@ -357,3 +374,7 @@ defineTypeOp opName absName repName tyVarl existenceTh = do
     return (opT,absC,repC,absRepTh,repAbsTh)
   where
     tyVars = Set.fromList tyVarl
+
+defineTypeOpUnsafe :: Name -> Name -> Name -> [TypeVar] -> Thm ->
+                      (TypeOp,Const,Const,Thm,Thm)
+defineTypeOpUnsafe = mkUnsafe5 "HOL.Thm.defineTypeOp" defineTypeOp

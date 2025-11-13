@@ -27,3 +27,9 @@ mkUnsafe2 s f = mkUnsafe1 s . f
 
 mkUnsafe3 :: String -> (a -> b -> c -> Maybe d) -> a -> b -> c -> d
 mkUnsafe3 s f = mkUnsafe2 s . f
+
+mkUnsafe4 :: String -> (a -> b -> c -> d -> Maybe e) -> a -> b -> c -> d -> e
+mkUnsafe4 s f = mkUnsafe3 s . f
+
+mkUnsafe5 :: String -> (a -> b -> c -> d -> e -> Maybe f) -> a -> b -> c -> d -> e -> f
+mkUnsafe5 s f = mkUnsafe4 s . f

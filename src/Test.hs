@@ -181,9 +181,9 @@ inferenceRules = ("Rules of inference",prop)
            toString th6 == "|- rep (abs r) = r <=> (\\x. x) = r"
 
     th1 = Thm.refl (Term.mkAbs x (Term.mkVar x))
-    Just (_,_,_,th2,th3) = Thm.defineTypeOp unit absN rep [] th1
-    Just (_,_,_,th4,th5) = Rule.defineTypeOpLegacy unit absN rep [] th1
-    Just th6 = Rule.sym th5
+    (_,_,_,th2,th3) = Thm.defineTypeOpUnsafe unit absN rep [] th1
+    (_,_,_,th4,th5) = Rule.defineTypeOpLegacyUnsafe unit absN rep [] th1
+    th6 = Rule.symUnsafe th5
 
     x = Var.mk (mkGlobal "x") Type.bool
 
