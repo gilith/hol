@@ -133,6 +133,16 @@ mkConjTerm thy t u = do
 mkConjTermUnsafe :: Theory -> Term -> Term -> Term
 mkConjTermUnsafe = mkUnsafe3 "HOL.Syntax.mkConjTerm" mkConjTerm
 
+listMkConjTerm :: Theory -> [Term] -> Maybe Term
+listMkConjTerm thy [] = trueTerm thy
+listMkConjTerm _ [t] = Just t
+listMkConjTerm thy (t : ts) = do
+  u <- listMkConjTerm thy ts
+  mkConjTerm thy t u
+
+listMkConjTermUnsafe :: Theory -> [Term] -> Term
+listMkConjTermUnsafe = mkUnsafe2 "HOL.Syntax.listMkConjTerm" listMkConjTerm
+
 destConjTerm :: Term -> Maybe (Term,Term)
 destConjTerm tm = do
   (c,t,u) <- Term.destBinaryOp tm
@@ -159,6 +169,16 @@ mkDisjTerm thy t u = do
 
 mkDisjTermUnsafe :: Theory -> Term -> Term -> Term
 mkDisjTermUnsafe = mkUnsafe3 "HOL.Syntax.mkDisjTerm" mkDisjTerm
+
+listMkDisjTerm :: Theory -> [Term] -> Maybe Term
+listMkDisjTerm thy [] = falseTerm thy
+listMkDisjTerm _ [t] = Just t
+listMkDisjTerm thy (t : ts) = do
+  u <- listMkDisjTerm thy ts
+  mkDisjTerm thy t u
+
+listMkDisjTermUnsafe :: Theory -> [Term] -> Term
+listMkDisjTermUnsafe = mkUnsafe2 "HOL.Syntax.listMkDisjTerm" listMkDisjTerm
 
 destDisjTerm :: Term -> Maybe (Term,Term)
 destDisjTerm tm = do
