@@ -178,6 +178,9 @@ multName = Name naturalNamespace "*"
 powerName :: Name
 powerName = Name naturalNamespace "^"
 
+preName :: Name
+preName = Name naturalNamespace "pre"
+
 subName :: Name
 subName = Name naturalNamespace "-"
 

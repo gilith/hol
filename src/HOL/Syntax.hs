@@ -344,6 +344,9 @@ sucTerm thy = do
   ty <- fmap mkUnaryType $ naturalType thy
   return $ Term.mkConst c ty
 
+sucTermUnsafe :: Theory -> Term
+sucTermUnsafe = mkUnsafe1 "HOL.Syntax.sucTerm" sucTerm
+
 mkSucTerm :: Theory -> Term -> Maybe Term
 mkSucTerm thy t = do
   f <- sucTerm thy
@@ -358,6 +361,34 @@ destSucTerm tm = do
   guard (Const.name c == Const.sucName)
   return t
 
+-- Predecessor
+
+preConst :: Theory -> Maybe Const
+preConst thy = Theory.lookupConst thy Const.preName
+
+preTerm :: Theory -> Maybe Term
+preTerm thy = do
+  c <- preConst thy
+  ty <- fmap mkUnaryType $ naturalType thy
+  return $ Term.mkConst c ty
+
+preTermUnsafe :: Theory -> Term
+preTermUnsafe = mkUnsafe1 "HOL.Syntax.preTerm" preTerm
+
+mkPreTerm :: Theory -> Term -> Maybe Term
+mkPreTerm thy t = do
+  f <- preTerm thy
+  Term.mkApp f t
+
+mkPreTermUnsafe :: Theory -> Term -> Term
+mkPreTermUnsafe = mkUnsafe2 "HOL.Syntax.mkPreTerm" mkPreTerm
+
+destPreTerm :: Term -> Maybe Term
+destPreTerm tm = do
+  (c,t) <- Term.destUnaryOp tm
+  guard (Const.name c == Const.preName)
+  return t
+
 -- Addition
 
 addConst :: Theory -> Maybe Const
@@ -368,6 +399,9 @@ addTerm thy = do
   c <- addConst thy
   ty <- fmap mkBinaryType $ naturalType thy
   return $ Term.mkConst c ty
+
+addTermUnsafe :: Theory -> Term
+addTermUnsafe = mkUnsafe1 "HOL.Syntax.addTerm" addTerm
 
 mkAddTerm :: Theory -> Term -> Term -> Maybe Term
 mkAddTerm thy t u = do
