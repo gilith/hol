@@ -119,3 +119,8 @@ sumName = Name sumNamespace "+"
 
 naturalName :: Name
 naturalName = Name naturalNamespace "natural"
+
+-- Unit type
+
+unitName :: Name
+unitName = Name unitNamespace "unit"

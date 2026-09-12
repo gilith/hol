@@ -112,6 +112,11 @@ pairNamespace = Namespace ["Data","Pair"]
 sumNamespace :: Namespace
 sumNamespace = Namespace ["Data","Sum"]
 
+-- Unit type
+
+unitNamespace :: Namespace
+unitNamespace = Namespace ["Data","Unit"]
+
 -- Functions
 
 functionNamespace :: Namespace

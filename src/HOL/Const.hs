@@ -132,6 +132,11 @@ consName = Name listNamespace "::"
 pairName :: Name
 pairName = Name pairNamespace ","
 
+-- Unit type
+
+unitName :: Name
+unitName = Name unitNamespace "()"
+
 -- Functions
 
 composeName :: Name

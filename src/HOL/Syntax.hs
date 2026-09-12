@@ -566,9 +566,9 @@ destBitTerm tm = do
     (c,t) <- Term.destUnaryOp tm
     fmap (flip (,) t) $ bit (Const.name c)
   where
-    bit n = if n == Const.bit0Name then Just False
-            else if n == Const.bit1Name then Just True
-            else Nothing
+    bit n | n == Const.bit0Name = Just False
+          | n == Const.bit1Name = Just True
+          | otherwise           = Nothing
 
 mkNumeralTerm :: Theory -> Integer -> Maybe Term
 mkNumeralTerm thy 0 = zeroTerm thy
@@ -592,3 +592,40 @@ destNumeralTerm tm =
 
 isNumeralTerm :: Term -> Bool
 isNumeralTerm = isJust . destNumeralTerm
+
+-------------------------------------------------------------------------------
+-- Unit type
+-------------------------------------------------------------------------------
+
+-- Types
+
+unitTypeOp :: Theory -> Maybe TypeOp
+unitTypeOp thy = Theory.lookupTypeOp thy TypeOp.unitName
+
+unitType :: Theory -> Maybe Type
+unitType thy = do
+  t <- unitTypeOp thy
+  return $ Type.mkOp t []
+
+unitTypeUnsafe :: Theory -> Type
+unitTypeUnsafe = mkUnsafe1 "HOL.Syntax.unitType" unitType
+
+-- Unit value
+
+unitConst :: Theory -> Maybe Const
+unitConst thy = Theory.lookupConst thy Const.unitName
+
+unitTerm :: Theory -> Maybe Term
+unitTerm thy = do
+  c <- unitConst thy
+  ty <- unitType thy
+  return $ Term.mkConst c ty
+
+unitTermUnsafe :: Theory -> Term
+unitTermUnsafe = mkUnsafe1 "HOL.Syntax.unitTerm" unitTerm
+
+isUnitTerm :: Term -> Bool
+isUnitTerm tm =
+    case Term.destConst tm of
+      Just (c,_) -> Const.name c == Const.unitName
+      Nothing -> False
